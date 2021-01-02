@@ -43,19 +43,18 @@ func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http
 
 		text := fmt.Sprintf(
 			`
-📶 Magnitude: %.1f %s
+📶 Magnitude: <b>%.1f</b> %s
 🔻 Depth: %.0f km
 📍 Location: %s
 ⏱ Time: <code>%s</code>
-🏣 Source/ID: <code>%s/%s</code>
+🏣 Source/ID: %s
 			`,
 			event.Data.Properties.Mag,
 			event.Data.Properties.MagType,
 			event.Data.Properties.Depth,
 			event.Data.Properties.FlynnRegion,
 			event.Data.Properties.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
-			event.Data.Properties.SourceCatalog,
-			event.Data.Properties.SourceID,
+			SourceLinkHTML(event.Data.Properties.SourceCatalog, event.Data.Properties.SourceID),
 		)
 
 		msg := tgbotapi.MessageConfig{
@@ -71,6 +70,23 @@ func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http
 		bot.Send(msg)
 	}
 }
+
+func SourceLinkHTML(sourceType, ID string) string {
+	switch SourceType(sourceType) {
+	case EMSC_RTS:
+		return fmt.Sprintf(
+			`<a href="https://www.emsc-csem.org/Earthquake/earthquake.php?id=%s">%s/%s</a>`,
+			ID, sourceType, ID)
+	default:
+		return fmt.Sprintf(`<code>%s/%s</code>`, sourceType, ID)
+	}
+}
+
+type SourceType string
+
+const (
+	EMSC_RTS SourceType = "EMSC-RTS"
+)
 
 func EventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
 	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details & Updates",
