@@ -42,19 +42,51 @@ func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http
 		chatID := 307010667
 
 		text := fmt.Sprintf(
-			"Magnitude: %.2f %s",
+			`
+📶 Magnitude: %.1f %s
+🔻 Depth: %.0f km
+📍 Location: %s
+⏱ Time: <code>%s</code>
+🏣 Source/ID: <code>%s/%s</code>
+			`,
 			event.Data.Properties.Mag,
 			event.Data.Properties.MagType,
+			event.Data.Properties.Depth,
+			event.Data.Properties.FlynnRegion,
+			event.Data.Properties.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
+			event.Data.Properties.SourceCatalog,
+			event.Data.Properties.SourceID,
 		)
 
-		msg := tgbotapi.NewVenue(
-			int64(chatID), text, event.Data.Properties.FlynnRegion,
-			event.Data.Properties.Lat,
-			event.Data.Properties.Lon,
-		)
+		msg := tgbotapi.MessageConfig{
+			BaseChat: tgbotapi.BaseChat{
+				ChatID: int64(chatID),
+			},
+			Text:                  text,
+			ParseMode:             tgbotapi.ModeHTML,
+			DisableWebPagePreview: true,
+		}
+		msg.ReplyMarkup = EventButtons(event)
 
 		bot.Send(msg)
 	}
+}
+
+func EventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
+	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details & Updates",
+		fmt.Sprintf("https://www.seismicportal.eu/eventdetails.html?unid=%s", event.Data.ID),
+	)
+	mapsURL := tgbotapi.NewInlineKeyboardButtonURL("Location 📍",
+		fmt.Sprintf("http://www.google.com/maps/place/%f,%f",
+			event.Data.Properties.Lat,
+			event.Data.Properties.Lon,
+		),
+	)
+
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(detailsURL),
+		tgbotapi.NewInlineKeyboardRow(mapsURL),
+	)
 }
 
 func TgBotServer(bot *tgbotapi.BotAPI) {
@@ -68,16 +100,25 @@ func TgBotServer(bot *tgbotapi.BotAPI) {
 	updates, _ := bot.GetUpdatesChan(u)
 
 	for update := range updates {
+		// TODO: Implement callback queries when needed.
+		//if update.CallbackQuery != nil{
+		//	fmt.Print(update)
+		//	bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID,update.CallbackQuery.Data))
+		//
+		//	bot.Send(tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,update.CallbackQuery.Data))
+		//}
+
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
 		}
 
-		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		msg.ReplyToMessageID = update.Message.MessageID
-
-		bot.Send(msg)
+		// TODO: Implement user message responds
+		//log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+		//
+		//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+		//msg.ReplyToMessageID = update.Message.MessageID
+		//
+		//bot.Send(msg)
 	}
 }
 
