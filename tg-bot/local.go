@@ -1,10 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/joho/godotenv"
+	"github.com/dustin/go-humanize"
 	"log"
 	"net/http"
 	"os"
@@ -27,12 +27,9 @@ func main() {
 
 func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var event EarthquakeEvent
-
-		err := json.NewDecoder(r.Body).Decode(&event)
+		event, err := ParseEvent(r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			log.Printf("process event: %v", err)
 		}
 
 		if event.Action != "create" {
@@ -46,14 +43,22 @@ func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http
 📶 Magnitude: <b>%.1f</b> %s
 🔻 Depth: %.0f km
 📍 Location: %s
-⏱ Time: <code>%s</code>
+⏳ Relative time: %s
+⏱ UTC Time: <code>%s</code>
+⏰ Local Time: <code>%s</code>
 🏣 Source/ID: %s
 			`,
 			event.Data.Properties.Mag,
 			event.Data.Properties.MagType,
 			event.Data.Properties.Depth,
 			event.Data.Properties.FlynnRegion,
+			humanize.RelTime(event.Data.Properties.Time, time.Now(), "ago", "adsf"),
 			event.Data.Properties.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
+			getLocationTime(
+				event.Data.Properties.Time,
+				event.Data.Properties.Lat,
+				event.Data.Properties.Lon,
+			),
 			SourceLinkHTML(event.Data.Properties.SourceCatalog, event.Data.Properties.SourceID),
 		)
 
@@ -67,26 +72,19 @@ func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http
 		}
 		msg.ReplyMarkup = EventButtons(event)
 
-		bot.Send(msg)
+		_, _ = bot.Send(msg)
 	}
 }
 
-func SourceLinkHTML(sourceType, ID string) string {
-	switch SourceType(sourceType) {
-	case EMSC_RTS:
-		return fmt.Sprintf(
-			`<a href="https://www.emsc-csem.org/Earthquake/earthquake.php?id=%s">%s/%s</a>`,
-			ID, sourceType, ID)
-	default:
-		return fmt.Sprintf(`<code>%s/%s</code>`, sourceType, ID)
+func getLocationTime(timeUTC time.Time, lat, lon float64) string {
+	localTime, err := LocationTime(timeUTC, lat, lon)
+	if err != nil {
+		fmt.Printf("cannot get location time: %v", err)
+		return "unknown"
 	}
+
+	return localTime.Format("Mon, 2 Jan 2006 15:04:05 MST")
 }
-
-type SourceType string
-
-const (
-	EMSC_RTS SourceType = "EMSC-RTS"
-)
 
 func EventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
 	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details & Updates",
@@ -136,33 +134,6 @@ func TgBotServer(bot *tgbotapi.BotAPI) {
 		//
 		//bot.Send(msg)
 	}
-}
-
-type EarthquakeEvent struct {
-	Action string `json:"action"`
-	Data   struct {
-		Geometry struct {
-			Type        string    `json:"type"`
-			Coordinates []float64 `json:"coordinates"`
-		} `json:"geometry"`
-		Type       string `json:"type"`
-		ID         string `json:"id"`
-		Properties struct {
-			LastUpdate    time.Time `json:"lastupdate"`
-			MagType       string    `json:"magtype"`
-			EvType        string    `json:"evtype"`
-			Lon           float64   `json:"lon"`
-			Auth          string    `json:"auth"`
-			Lat           float64   `json:"lat"`
-			Depth         float64   `json:"depth"`
-			UnID          string    `json:"unid"`
-			Mag           float64   `json:"mag"`
-			Time          time.Time `json:"time"`
-			SourceID      string    `json:"source_id"`
-			SourceCatalog string    `json:"source_catalog"`
-			FlynnRegion   string    `json:"flynn_region"`
-		} `json:"properties"`
-	} `json:"data"`
 }
 
 func getEnv(key string, defaultVal string) string {
