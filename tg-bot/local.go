@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/dustin/go-humanize"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/joho/godotenv"
-	"github.com/dustin/go-humanize"
 	"log"
 	"net/http"
 	"os"
@@ -52,7 +52,7 @@ func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http
 			event.Data.Properties.MagType,
 			event.Data.Properties.Depth,
 			event.Data.Properties.FlynnRegion,
-			humanize.RelTime(event.Data.Properties.Time, time.Now(), "ago", "adsf"),
+			humanize.RelTime(event.Data.Properties.Time, time.Now(), "ago", "later"),
 			event.Data.Properties.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
 			getLocationTime(
 				event.Data.Properties.Time,

@@ -51,4 +51,3 @@ type TimezoneDBResponse struct {
 	Timestamp        int64       `json:"timestamp"`
 	Formatted        string      `json:"formatted"`
 }
-
