@@ -9,7 +9,7 @@ COPY go.sum .
 RUN go mod download
 COPY . .
 
-RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o /out/main .
+RUN CGO_ENABLED=0 go build -ldflags '-w -s' -o /out/main .
 
 
 FROM alpine:latest

@@ -11,6 +11,9 @@ func LocationTime(timeUTC time.Time, lat, lon float64) (*time.Time, error) {
 	resp, err := http.Get(fmt.Sprintf(
 		"http://api.timezonedb.com/v2.1/get-time-zone?by=position&format=json&lat=%f&lng=%f&time=%d&key=%s",
 		lat, lon, timeUTC.Unix(), getEnv("TIMEZONEDB_API_KEY", "")))
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("timezonedb failed: %v", err)
 	}

@@ -26,49 +26,25 @@ func main() {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
-
-	log.Printf("connecting to %s", *source)
-
-	c, _, err := websocket.DefaultDialer.Dial(*source, nil)
-	if err != nil {
-		log.Fatal("dial:", err)
-	}
-	defer c.Close()
-	log.Print("connected!")
-
+	restart := make(chan struct{})
 	done := make(chan struct{})
 
-	go func() {
-		defer close(done)
-		for {
-			_, message, err := c.ReadMessage()
-			if err != nil {
-				log.Println("read:", err)
-				return
-			}
-
-			log.Printf("recv: %s", message)
-
-			_, err = http.Post(*webhook, "application/json", bytes.NewBuffer(message))
-			if err != nil {
-				log.Println("sending to webhook:", err)
-				continue
-			}
-
-			log.Print("sent to webhook")
-		}
-	}()
+	conn := listen(restart, done)
 
 	for {
 		select {
+		case <-restart:
+			log.Printf("restart")
+			time.Sleep(200 * time.Millisecond) // avoid spam
+			restart = make(chan struct{})
+			conn = listen(restart, done)
 		case <-done:
 			return
 		case <-interrupt:
 			log.Println("interrupt")
 
-			// Cleanly close the connection by sending a close message and then
-			// waiting (with timeout) for the server to close the connection.
-			err := c.WriteMessage(
+			// Closing a websocket connection in a clean way.
+			err := conn.WriteMessage(
 				websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
 			)
@@ -84,4 +60,40 @@ func main() {
 			return
 		}
 	}
+}
+
+func listen(restart, done chan<- struct{}) *websocket.Conn {
+	log.Printf("connecting to %s", *source)
+
+	conn, _, err := websocket.DefaultDialer.Dial(*source, nil)
+	if err != nil {
+		defer close(done)
+		log.Fatal("dial:", err)
+	}
+	log.Print("connected!")
+
+	go func() {
+		defer conn.Close()
+		defer close(restart)
+
+		for {
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				return
+			}
+
+			log.Printf("received: %s", message)
+
+			_, err = http.Post(*webhook, "application/json", bytes.NewBuffer(message))
+			if err != nil {
+				log.Println("error sending to webhook:", err)
+				continue
+			}
+
+			log.Print("sent to webhook")
+		}
+	}()
+
+	return conn
 }
