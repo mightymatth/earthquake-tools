@@ -125,21 +125,16 @@ func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) {
 	updates, _ := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		// TODO: Implement callback queries when needed.
 		if update.CallbackQuery != nil {
-			switch screen.Screen(update.CallbackQuery.Data) {
-			case screen.Home:
-				bot.Send(tgbotapi.NewEditMessageReplyMarkup(
-					update.CallbackQuery.Message.Chat.ID,
-					update.CallbackQuery.Message.MessageID,
-					screen.HomeButtons()))
-			case screen.Settings:
-				bot.Send(tgbotapi.NewEditMessageReplyMarkup(
-					update.CallbackQuery.Message.Chat.ID,
-					update.CallbackQuery.Message.MessageID,
-					screen.SettingsButtons()))
+			s, err := screen.New(update.CallbackQuery.Data)
+			if err != nil {
+				log.Printf("cannot create screen: %s", err)
+				continue
 			}
-			bot.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: update.CallbackQuery.ID,})
+
+			s.TakeAction(bot, update.CallbackQuery.Message)
+
+			bot.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: update.CallbackQuery.ID})
 			continue
 		}
 
@@ -152,7 +147,7 @@ func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) {
 			screen.ShowHome(bot, update.Message.Chat.ID)
 			continue
 		default:
-			screen.ShowHome(bot, update.Message.Chat.ID)
+			screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
 			continue
 		}
 
