@@ -5,6 +5,9 @@ import (
 	"github.com/dustin/go-humanize"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/joho/godotenv"
+	"github.com/mightymatth/earthquake-tools/tg-bot/screen"
+	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
+	"github.com/mightymatth/earthquake-tools/tg-bot/storage/mongo"
 	"log"
 	"net/http"
 	"os"
@@ -19,10 +22,18 @@ func main() {
 		log.Panic(err)
 	}
 
+	storageImpl, err := mongo.NewStorage()
+	if err != nil {
+		log.Panic(err)
+	}
+	defer storageImpl.Client.Disconnect(storageImpl.DefaultCtx)
+
+	service := storage.NewService(storageImpl)
+
 	http.HandleFunc("/", EarthquakeEventServer(bot))
 	go http.ListenAndServe(":3300", nil)
 
-	TgBotServer(bot)
+	TgBotServer(bot, service)
 }
 
 func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http.Request) {
@@ -103,7 +114,7 @@ func EventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
-func TgBotServer(bot *tgbotapi.BotAPI) {
+func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) {
 	bot.Debug = true
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
@@ -115,20 +126,46 @@ func TgBotServer(bot *tgbotapi.BotAPI) {
 
 	for update := range updates {
 		// TODO: Implement callback queries when needed.
-		//if update.CallbackQuery != nil{
-		//	fmt.Print(update)
-		//	bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID,update.CallbackQuery.Data))
-		//
-		//	bot.Send(tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,update.CallbackQuery.Data))
-		//}
+		if update.CallbackQuery != nil {
+			switch screen.Screen(update.CallbackQuery.Data) {
+			case screen.Home:
+				bot.Send(tgbotapi.NewEditMessageReplyMarkup(
+					update.CallbackQuery.Message.Chat.ID,
+					update.CallbackQuery.Message.MessageID,
+					screen.HomeButtons()))
+			case screen.Settings:
+				bot.Send(tgbotapi.NewEditMessageReplyMarkup(
+					update.CallbackQuery.Message.Chat.ID,
+					update.CallbackQuery.Message.MessageID,
+					screen.SettingsButtons()))
+			}
+			bot.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: update.CallbackQuery.ID,})
+			continue
+		}
 
 		if update.Message == nil { // ignore any non-Message Updates
+			continue
+		}
+
+		switch update.Message.Text {
+		case "/start":
+			screen.ShowHome(bot, update.Message.Chat.ID)
+			continue
+		default:
+			screen.ShowHome(bot, update.Message.Chat.ID)
 			continue
 		}
 
 		// TODO: Implement user message responds
 		//log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 		//
+		//chatState, err := s.GetChatState(strconv.FormatInt(update.Message.Chat.ID, 10))
+		//if err != nil {
+		//	log.Printf("cannot fetch chatstate: %v", err)
+		//}
+		//
+		//log.Printf("chatState: %v", chatState)
+
 		//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 		//msg.ReplyToMessageID = update.Message.MessageID
 		//
