@@ -1,20 +1,26 @@
 package screen
 
 import (
-	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 )
 
-type HomeScreen Screen
+type HomeScreen struct {
+	Screen
+}
 
-const Home HomeScreen = "HOME"
+const Home Cmd = "HOME"
 
-func (s HomeScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
-	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, s.text(), s.inlineButtons())
+func NewHomeScreen() HomeScreen {
+	return HomeScreen{Screen{Cmd: Home}}
+}
+
+func (scr HomeScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
+	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(), scr.inlineButtons())
 	bot.Send(message)
 }
 
-func (s HomeScreen) text() string {
+func (scr HomeScreen) text() string {
 	return `
 Welcome and welcome,
 
@@ -22,8 +28,8 @@ You are the best!
 `
 }
 
-func (s HomeScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
-	settings := tgbotapi.NewInlineKeyboardButtonData("Settings", fmt.Sprintf("%s", Settings))
+func (scr HomeScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
+	settings := tgbotapi.NewInlineKeyboardButtonData("Subscriptions", NewSubscriptionsScreen().Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(settings),
@@ -40,7 +46,7 @@ func ShowUnknownCommand(bot *tgbotapi.BotAPI, chatID int64) {
 		ParseMode:             tgbotapi.ModeHTML,
 		DisableWebPagePreview: true,
 	}
-	msg.ReplyMarkup = Home.inlineButtons()
+	msg.ReplyMarkup = HomeScreen{}.inlineButtons()
 
 	_, _ = bot.Send(msg)
 }
@@ -52,15 +58,16 @@ Unknown command.
 }
 
 func ShowHome(bot *tgbotapi.BotAPI, chatID int64) {
+	home := HomeScreen{}
 	msg := tgbotapi.MessageConfig{
 		BaseChat: tgbotapi.BaseChat{
 			ChatID: chatID,
 		},
-		Text:                  Home.text(),
+		Text:                  home.text(),
 		ParseMode:             tgbotapi.ModeHTML,
 		DisableWebPagePreview: true,
 	}
-	msg.ReplyMarkup = Home.inlineButtons()
+	msg.ReplyMarkup = home.inlineButtons()
 
 	_, _ = bot.Send(msg)
 }

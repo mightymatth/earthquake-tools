@@ -19,20 +19,23 @@ var flagMongoURI = flag.String("mongo-uri",
 	"MongoDB URI")
 
 const (
-	databaseName         = "earthquakesTgBot"
-	chatStatesCollection = "chatStates"
+	databaseName           = "earthquakesTgBot"
+	chatStateCollection    = "chatStates"
+	subscriptionCollection = "subscriptions"
 )
 
 type Storage struct {
-	Client     *mongo.Client
-	DefaultCtx context.Context
-	database   *mongo.Database
-	chatStates *mongo.Collection
+	Client        *mongo.Client
+	database      *mongo.Database
+	chatStates    *mongo.Collection
+	subscriptions *mongo.Collection
 }
 
-func NewStorage() (*Storage, error) {
+func NewStorage(uri string) (*Storage, error) {
 	var mongoURI string
-	if mongoURI = os.Getenv("MONGO_URI"); mongoURI == "" {
+	if uri != "" {
+		mongoURI = uri
+	} else if mongoURI = os.Getenv("MONGO_URI"); mongoURI == "" {
 		mongoURI = *flagMongoURI
 	}
 
@@ -40,13 +43,14 @@ func NewStorage() (*Storage, error) {
 
 	s := new(Storage)
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, _ = context.WithTimeout(context.Background(), 2*time.Second)
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		return nil, fmt.Errorf("unable to ping mongo db: %s", err)
@@ -54,39 +58,153 @@ func NewStorage() (*Storage, error) {
 	log.Printf("[mongo] Successfully connected!")
 
 	s.Client = client
-	s.DefaultCtx = ctx
 	s.database = s.Client.Database(databaseName)
-	s.chatStates = s.database.Collection(chatStatesCollection)
+	s.chatStates = s.database.Collection(chatStateCollection)
+	s.subscriptions = s.database.Collection(subscriptionCollection)
 
 	return s, nil
 }
 
-func (s *Storage) GetChatState(chatID string) (*entity.ChatState, error) {
-	var dbChatState ChatState
+func (s *Storage) GetChatState(chatID int64) *entity.ChatState {
+	var chatStateDB ChatState
 
+	filter := bson.D{{"chat_id", bson.D{{"$eq", chatID}}}}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := s.chatStates.FindOne(ctx, filter).Decode(&chatStateDB); err != nil {
+		chatStateDB = ChatState{
+			ChatID: chatID,
+		}
+	}
+
+	chatState := entity.ChatState{
+		ChatID: chatStateDB.ChatID,
+		State:  chatStateDB.State,
+	}
+
+	return &chatState
+}
+
+func (s *Storage) SetChatState(
+	chatID int64, update *entity.ChatStateUpdate,
+) (*entity.ChatState, error) {
+	var newChatStateDB ChatState
+
+	filter := bson.D{{"chat_id", bson.D{{"$eq", chatID}}}}
 	upsert := true
 	returnDocument := options.After
 	findOptions := options.FindOneAndUpdateOptions{
 		ReturnDocument: &returnDocument,
 		Upsert:         &upsert,
 	}
-	freshChatState := ChatState{
-		ChatID: chatID,
-		State:  "",
-	}
-	filter := bson.D{{"chat_id", bson.D{{"$eq", chatID}}}}
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
 	if err := s.chatStates.FindOneAndUpdate(
-		ctx, filter, bson.M{"$set": freshChatState}, &findOptions,
-	).Decode(&dbChatState); err != nil {
+		ctx, filter, bson.M{"$set": update}, &findOptions,
+	).Decode(&newChatStateDB); err != nil {
 		return nil, err
 	}
 
-	chatState := entity.ChatState{
-		ChatID: dbChatState.ChatID,
-		State:  dbChatState.State,
+	newChatState := entity.ChatState{
+		ChatID: newChatStateDB.ChatID,
+		State:  newChatStateDB.State,
 	}
 
-	return &chatState, nil
+	return &newChatState, nil
+}
+
+func (s *Storage) GetSubscription(chatID int64) *entity.Subscription {
+	var subDB Subscription
+
+	filter := bson.D{{"chat_id", bson.D{{"$eq", chatID}}}}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := s.subscriptions.FindOne(ctx, filter).Decode(&subDB); err != nil {
+		subDB = Subscription{
+			ChatID: chatID,
+		}
+	}
+
+	sub := entity.Subscription{
+		ChatID:      subDB.ChatID,
+		MinMag:      subDB.MinMag,
+		EqLocations: subDB.EqLocation,
+		MyLocation:  subDB.MyLocation,
+		Radius:      subDB.Radius,
+		OffsetSec:   subDB.OffsetSec,
+	}
+
+	return &sub
+}
+
+func (s *Storage) SetSubscription(
+	chatID int64, update *entity.SubscriptionUpdate,
+) (*entity.Subscription, error) {
+	var newSubDB Subscription
+
+	filter := bson.D{{"chat_id", bson.D{{"$eq", chatID}}}}
+	upsert := true
+	returnDocument := options.After
+	findOptions := options.FindOneAndUpdateOptions{
+		ReturnDocument: &returnDocument,
+		Upsert:         &upsert,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := s.subscriptions.FindOneAndUpdate(
+		ctx, filter, bson.M{"$set": update}, &findOptions,
+	).Decode(&newSubDB); err != nil {
+		return nil, err
+	}
+
+	newSub := entity.Subscription{
+		ChatID:      newSubDB.ChatID,
+		MinMag:      newSubDB.MinMag,
+		EqLocations: newSubDB.EqLocation,
+		MyLocation:  newSubDB.MyLocation,
+		Radius:      newSubDB.Radius,
+		OffsetSec:   newSubDB.OffsetSec,
+	}
+
+	return &newSub, nil
+}
+
+func (s *Storage) GetSubscriptions(chatID int64) (subs []entity.Subscription) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	filter := bson.M{"chat_id": chatID}
+	cursor, err := s.subscriptions.Find(ctx, filter)
+	if err != nil {
+		return subs
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var subDB Subscription
+		err := cursor.Decode(&subDB)
+		if err != nil {
+			continue
+		}
+
+		sub := entity.Subscription{
+			ChatID:      subDB.ChatID,
+			Name:        subDB.Name,
+			MinMag:      subDB.MinMag,
+			EqLocations: subDB.EqLocation,
+			MyLocation:  subDB.MyLocation,
+			Radius:      subDB.Radius,
+			OffsetSec:   subDB.OffsetSec,
+		}
+
+		subs = append(subs, sub)
+	}
+
+	return subs
 }

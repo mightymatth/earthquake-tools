@@ -2,22 +2,18 @@ package screen
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 )
 
 type DelayScreen Screen
 type EditDelayScreen Screen
 
-const (
-	Delay     DelayScreen     = "DELAY"
-	EditDelay EditDelayScreen = "EDIT_DELAY"
-)
-
-func (s DelayScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
-	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, s.text(), s.inlineButtons())
+func (scr DelayScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
+	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(), scr.inlineButtons())
 	bot.Send(message)
 }
 
-func (s DelayScreen) text() string {
+func (scr DelayScreen) text() string {
 	return `
 Current delay set to: X
 
@@ -26,9 +22,9 @@ If you set a delay to 5 minutes, you will only receive the events that arrived l
 `
 }
 
-func (s DelayScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
-	delay := tgbotapi.NewInlineKeyboardButtonData("Edit Delay", string(EditDelay))
-	settings := tgbotapi.NewInlineKeyboardButtonData("« Settings", string(Settings))
+func (scr DelayScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
+	delay := tgbotapi.NewInlineKeyboardButtonData("Edit Delay", "")
+	settings := tgbotapi.NewInlineKeyboardButtonData("« Subscription", "")
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(delay),
@@ -37,7 +33,7 @@ func (s DelayScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
 	return &kb
 }
 
-func (s EditDelayScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
+func (scr EditDelayScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
 	// TODO: edit message text and set keyboard (not inline)
 	//message := editedMessageConfig(msg.Chat.ID, msg.MessageID, m.text(), m.inlineButtons())
 	//bot.Send(message)

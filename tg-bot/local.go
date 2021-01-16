@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/dustin/go-humanize"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -22,11 +23,11 @@ func main() {
 		log.Panic(err)
 	}
 
-	storageImpl, err := mongo.NewStorage()
+	storageImpl, err := mongo.NewStorage("")
 	if err != nil {
 		log.Panic(err)
 	}
-	defer storageImpl.Client.Disconnect(storageImpl.DefaultCtx)
+	defer storageImpl.Client.Disconnect(context.Background())
 
 	service := storage.NewService(storageImpl)
 
@@ -126,13 +127,13 @@ func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) {
 
 	for update := range updates {
 		if update.CallbackQuery != nil {
-			s, err := screen.New(update.CallbackQuery.Data)
+			scr, err := screen.New(update.CallbackQuery.Data)
 			if err != nil {
 				log.Printf("cannot create screen: %s", err)
 				continue
 			}
 
-			s.TakeAction(bot, update.CallbackQuery.Message)
+			scr.TakeAction(bot, update.CallbackQuery.Message, s)
 
 			bot.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: update.CallbackQuery.ID})
 			continue

@@ -3,35 +3,49 @@ package screen
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
+	"github.com/pkg/errors"
+	"strings"
 )
 
-type Screen string
+type Screen struct {
+	Cmd Cmd
+	Arg string
+}
+
+type Cmd string
 
 type Screener interface {
-	TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message)
+	TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service)
 }
 
 func New(data string) (Screener, error) {
-	var s Screener
-
-	switch data {
-	case string(Home):
-		s = HomeScreen(data)
-	case string(Settings):
-		s = SettingsScreen(data)
-	case string(Magnitude):
-		s = MagnitudeScreen(data)
-	case string(EditMagnitude):
-		s = EditMagnitudeScreen(data)
-	case string(Delay):
-		s = DelayScreen(data)
-	case string(EditDelay):
-		s = EditDelayScreen(data)
-	default:
+	s, err := Decode(data)
+	if err != nil {
 		return nil, fmt.Errorf("unknown screen '%s'", data)
 	}
 
 	return s, nil
+}
+
+func (s Screen) Encode() string {
+	return fmt.Sprintf("%s %s", s.Cmd, s.Arg)
+}
+
+func Decode(data string) (Screener, error) {
+	parts := strings.Split(data, " ")
+	cmd, arg := parts[0], parts[1]
+
+	switch Cmd(cmd) {
+	case Home:
+		return NewHomeScreen(), nil
+	case Subs:
+		return NewSubscriptionsScreen(), nil
+	case Sub:
+		return NewSubscriptionScreen(arg), nil
+	default:
+		return nil, errors.Errorf("screen '%s' doesnt exist", cmd)
+	}
 }
 
 func editedMessageConfig(

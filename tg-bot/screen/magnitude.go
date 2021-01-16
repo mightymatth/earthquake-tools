@@ -2,30 +2,29 @@ package screen
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 )
 
 type MagnitudeScreen Screen
 type EditMagnitudeScreen Screen
 
-const (
-	Magnitude     MagnitudeScreen     = "MAGNITUDE"
-	EditMagnitude EditMagnitudeScreen = "EDIT_MAGNITUDE"
-)
 
-func (s MagnitudeScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
-	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, s.text(), s.inlineButtons())
+func (scr MagnitudeScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
+	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(), scr.inlineButtons())
 	bot.Send(message)
 }
 
-func (s MagnitudeScreen) text() string {
+func (scr MagnitudeScreen) text() string {
 	return `
 You have set your minimum magnitude level to X.
 `
 }
 
-func (s MagnitudeScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
-	magnitude := tgbotapi.NewInlineKeyboardButtonData("Edit Magnitude", string(EditMagnitude))
-	settings := tgbotapi.NewInlineKeyboardButtonData("« Settings", string(Settings))
+func (scr MagnitudeScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
+	magnitude := tgbotapi.NewInlineKeyboardButtonData(
+		"Edit Magnitude", "")
+	settings := tgbotapi.NewInlineKeyboardButtonData(
+		"« Subscription", "")
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(magnitude),
@@ -34,7 +33,7 @@ func (s MagnitudeScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
 	return &kb
 }
 
-func (s EditMagnitudeScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
+func (scr EditMagnitudeScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
 	// TODO: edit message text and set keyboard (not inline)
 	//message := editedMessageConfig(msg.Chat.ID, msg.MessageID, m.text(), m.inlineButtons())
 	//bot.Send(message)
