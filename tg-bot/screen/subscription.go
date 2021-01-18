@@ -11,8 +11,10 @@ type SubscriptionScreen struct {
 
 const Sub Cmd = "SUB"
 
-func NewSubscriptionScreen(arg string) SubscriptionScreen {
-	return SubscriptionScreen{Screen{Cmd: Subs, Arg: arg}}
+func NewSubscriptionScreen(subID string, reset ResetInputType) SubscriptionScreen {
+	return SubscriptionScreen{Screen{
+		Cmd: Subs,
+		Params: Params{P1: subID, P2: string(reset)}}}
 }
 
 func (scr SubscriptionScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
@@ -29,9 +31,10 @@ You can filter out earthquakes by properties such as minimum magnitude, your loc
 }
 
 func (scr SubscriptionScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
-	magnitude := tgbotapi.NewInlineKeyboardButtonData("Magnitude", "")
-	delay := tgbotapi.NewInlineKeyboardButtonData("Delay", "")
-	home := tgbotapi.NewInlineKeyboardButtonData("« Home", "")
+	magnitude := tgbotapi.NewInlineKeyboardButtonData("Magnitude", " ")
+	delay := tgbotapi.NewInlineKeyboardButtonData("Delay", " ")
+	home := tgbotapi.NewInlineKeyboardButtonData("« Subscriptions",
+		NewSubscriptionsScreen("").Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(magnitude, delay),

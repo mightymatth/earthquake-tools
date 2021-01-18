@@ -29,10 +29,11 @@ You are the best!
 }
 
 func (scr HomeScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
-	settings := tgbotapi.NewInlineKeyboardButtonData("Subscriptions", NewSubscriptionsScreen().Encode())
+	subs := tgbotapi.NewInlineKeyboardButtonData("Subscriptions",
+		NewSubscriptionsScreen("").Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(settings),
+		tgbotapi.NewInlineKeyboardRow(subs),
 	)
 	return &kb
 }

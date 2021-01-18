@@ -80,7 +80,7 @@ func (s *Storage) GetChatState(chatID int64) *entity.ChatState {
 
 	chatState := entity.ChatState{
 		ChatID: chatStateDB.ChatID,
-		State:  chatStateDB.State,
+		AwaitInput:  entity.AwaitInput(chatStateDB.AwaitInput),
 	}
 
 	return &chatState
@@ -110,23 +110,21 @@ func (s *Storage) SetChatState(
 
 	newChatState := entity.ChatState{
 		ChatID: newChatStateDB.ChatID,
-		State:  newChatStateDB.State,
+		AwaitInput:  entity.AwaitInput(newChatStateDB.AwaitInput),
 	}
 
 	return &newChatState, nil
 }
 
-func (s *Storage) GetSubscription(chatID int64) *entity.Subscription {
+func (s *Storage) GetSubscription(subID string) (*entity.Subscription, error) {
 	var subDB Subscription
 
-	filter := bson.D{{"chat_id", bson.D{{"$eq", chatID}}}}
+	filter := bson.M{"_id": subID}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := s.subscriptions.FindOne(ctx, filter).Decode(&subDB); err != nil {
-		subDB = Subscription{
-			ChatID: chatID,
-		}
+		return nil, err
 	}
 
 	sub := entity.Subscription{
@@ -138,32 +136,29 @@ func (s *Storage) GetSubscription(chatID int64) *entity.Subscription {
 		OffsetSec:   subDB.OffsetSec,
 	}
 
-	return &sub
+	return &sub, nil
 }
 
-func (s *Storage) SetSubscription(
-	chatID int64, update *entity.SubscriptionUpdate,
-) (*entity.Subscription, error) {
-	var newSubDB Subscription
-
-	filter := bson.D{{"chat_id", bson.D{{"$eq", chatID}}}}
-	upsert := true
-	returnDocument := options.After
-	findOptions := options.FindOneAndUpdateOptions{
-		ReturnDocument: &returnDocument,
-		Upsert:         &upsert,
-	}
+func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscription, error) {
+	subCreate := Subscription{ChatID: chatID, Name: name}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	if err := s.subscriptions.FindOneAndUpdate(
-		ctx, filter, bson.M{"$set": update}, &findOptions,
-	).Decode(&newSubDB); err != nil {
+	dbSubID, err := s.subscriptions.InsertOne(ctx, &subCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	var newSubDB Subscription
+	filter := bson.M{"_id": dbSubID}
+	err = s.subscriptions.FindOne(ctx, filter).Decode(&newSubDB)
+	if err != nil {
 		return nil, err
 	}
 
 	newSub := entity.Subscription{
+		SubID:       newSubDB.ID.String(),
 		ChatID:      newSubDB.ChatID,
 		MinMag:      newSubDB.MinMag,
 		EqLocations: newSubDB.EqLocation,
@@ -173,6 +168,49 @@ func (s *Storage) SetSubscription(
 	}
 
 	return &newSub, nil
+}
+
+func (s *Storage) UpdateSubscription(
+	subID string, subUpdate *entity.SubscriptionUpdate,
+) (*entity.Subscription, error) {
+	var newSubDB Subscription
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": subID}
+	update := bson.M{"$set": subUpdate}
+
+	if err := s.subscriptions.FindOneAndUpdate(
+		ctx, filter, update,
+	).Decode(&newSubDB); err != nil {
+		return nil, err
+	}
+
+	newSub := entity.Subscription{
+		SubID:       newSubDB.ID.String(),
+		ChatID:      newSubDB.ChatID,
+		MinMag:      newSubDB.MinMag,
+		EqLocations: newSubDB.EqLocation,
+		MyLocation:  newSubDB.MyLocation,
+		Radius:      newSubDB.Radius,
+		OffsetSec:   newSubDB.OffsetSec,
+	}
+
+	return &newSub, nil
+}
+
+func (s *Storage) DeleteSubscription(subID string) error {
+	filter := bson.M{"_id": subID}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if _, err := s.subscriptions.DeleteOne(ctx, filter); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Storage) GetSubscriptions(chatID int64) (subs []entity.Subscription) {

@@ -147,9 +147,6 @@ func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) {
 		case "/start":
 			screen.ShowHome(bot, update.Message.Chat.ID)
 			continue
-		default:
-			screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
-			continue
 		}
 
 		// TODO: Implement user message responds
@@ -166,6 +163,9 @@ func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) {
 		//msg.ReplyToMessageID = update.Message.MessageID
 		//
 		//bot.Send(msg)
+
+		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
+		continue
 	}
 }
 

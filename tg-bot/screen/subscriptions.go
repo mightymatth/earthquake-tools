@@ -4,7 +4,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
-	"log"
 )
 
 type SubscriptionsScreen struct {
@@ -13,11 +12,16 @@ type SubscriptionsScreen struct {
 
 const Subs Cmd = "SUBS"
 
-func NewSubscriptionsScreen() SubscriptionsScreen {
-	return SubscriptionsScreen{Screen{Cmd: Subs}}
+func NewSubscriptionsScreen(reset ResetInputType) SubscriptionsScreen {
+	return SubscriptionsScreen{Screen{
+		Cmd:    Subs,
+		Params: Params{P1: string(reset)},
+	}}
 }
 
 func (scr SubscriptionsScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
+	ResetAwaitInput(ResetInputType(scr.Params.P1), msg.Chat.ID, s)
+
 	subs := s.GetSubscriptions(msg.Chat.ID)
 	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(), scr.inlineButtons(subs))
 	bot.Send(message)
@@ -34,9 +38,7 @@ func (scr SubscriptionsScreen) inlineButtons(
 	subs []entity.Subscription,
 ) *tgbotapi.InlineKeyboardMarkup {
 	home := tgbotapi.NewInlineKeyboardButtonData("« Home", NewHomeScreen().Encode())
-	newSub := tgbotapi.NewInlineKeyboardButtonData("+ New", NewHomeScreen().Encode())
-
-	log.Printf("subs: %v", subs)
+	newSub := tgbotapi.NewInlineKeyboardButtonData("+ New", NewCreateSubscriptionScreen().Encode())
 
 	rows := append(
 		scr.subscriptionRows(subs, 2),

@@ -1,10 +1,16 @@
 package entity
 
 type ChatState struct {
-	ChatID int64
-	State  string
+	ChatID     int64
+	AwaitInput AwaitInput
 }
 
 type ChatStateUpdate struct {
-	State  string
+	AwaitInput AwaitInput
 }
+
+type AwaitInput string
+
+const (
+	CreateSubName AwaitInput = "CREATE_SUB_NAME"
+)
