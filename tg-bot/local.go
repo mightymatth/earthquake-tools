@@ -6,7 +6,6 @@ import (
 	"github.com/dustin/go-humanize"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/joho/godotenv"
-	"github.com/mightymatth/earthquake-tools/tg-bot/screen"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage/mongo"
 	"log"
@@ -105,8 +104,7 @@ func EventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
 	mapsURL := tgbotapi.NewInlineKeyboardButtonURL("Location 📍",
 		fmt.Sprintf("http://www.google.com/maps/place/%f,%f",
 			event.Data.Properties.Lat,
-			event.Data.Properties.Lon,
-		),
+			event.Data.Properties.Lon),
 	)
 
 	return tgbotapi.NewInlineKeyboardMarkup(
@@ -126,46 +124,7 @@ func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) {
 	updates, _ := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.CallbackQuery != nil {
-			scr, err := screen.New(update.CallbackQuery.Data)
-			if err != nil {
-				log.Printf("cannot create screen: %s", err)
-				continue
-			}
-
-			scr.TakeAction(bot, update.CallbackQuery.Message, s)
-
-			bot.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: update.CallbackQuery.ID})
-			continue
-		}
-
-		if update.Message == nil { // ignore any non-Message Updates
-			continue
-		}
-
-		switch update.Message.Text {
-		case "/start":
-			screen.ShowHome(bot, update.Message.Chat.ID)
-			continue
-		}
-
-		// TODO: Implement user message responds
-		//log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-		//
-		//chatState, err := s.GetChatState(strconv.FormatInt(update.Message.Chat.ID, 10))
-		//if err != nil {
-		//	log.Printf("cannot fetch chatstate: %v", err)
-		//}
-		//
-		//log.Printf("chatState: %v", chatState)
-
-		//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		//msg.ReplyToMessageID = update.Message.MessageID
-		//
-		//bot.Send(msg)
-
-		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
-		continue
+		botHandler(update, bot, s)
 	}
 }
 

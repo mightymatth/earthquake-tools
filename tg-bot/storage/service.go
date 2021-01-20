@@ -22,7 +22,7 @@ type Service interface {
 	DeleteSubscription(subID string) error
 	GetSubscriptions(chatID int64) []entity.Subscription
 
-	SetAwaitUserInput(chatID int64, awaitInput entity.AwaitInput) error
+	SetAwaitUserInput(chatID int64, awaitInput string) error
 }
 
 type service struct {
@@ -65,7 +65,7 @@ func (s *service) GetSubscriptions(chatID int64) []entity.Subscription {
 	return s.r.GetSubscriptions(chatID)
 }
 
-func (s *service) SetAwaitUserInput(chatID int64, awaitInput entity.AwaitInput) error {
+func (s *service) SetAwaitUserInput(chatID int64, awaitInput string) error {
 	stateUpdate := entity.ChatStateUpdate{AwaitInput: awaitInput}
 	_, err := s.SetChatState(chatID, &stateUpdate)
 	if err != nil {

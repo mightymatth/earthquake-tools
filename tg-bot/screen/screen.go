@@ -9,6 +9,7 @@ import (
 )
 
 type Screen struct {
+	Screener
 	Cmd    Cmd
 	Params Params
 }
@@ -26,6 +27,7 @@ const ResetInput ResetInputType = "+"
 
 type Screener interface {
 	TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service)
+	Type() Screen
 }
 
 func New(data string) (Screener, error) {
@@ -37,12 +39,20 @@ func New(data string) (Screener, error) {
 	return s, nil
 }
 
+func (s Screen) Type() Screen {
+	return s
+}
+
 func (s Screen) Encode() string {
 	return fmt.Sprintf("%s:%s:%s", s.Cmd, s.Params.P1, s.Params.P2)
 }
 
 func Decode(data string) (Screener, error) {
 	parts := strings.Split(data, ":")
+	if len(parts) != 3 {
+		return nil, errors.Errorf("empty or data format: '%v'", data)
+	}
+
 	cmd, p1, p2 := parts[0], parts[1], parts[2]
 
 	switch Cmd(cmd) {

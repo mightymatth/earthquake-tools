@@ -7,3 +7,7 @@ type ChatState struct {
 	ChatID     int64              `bson:"chat_id,omitempty"`
 	AwaitInput string             `bson:"await_input"`
 }
+
+type ChatStateUpdate struct {
+	AwaitInput string `bson:"await_input"`
+}

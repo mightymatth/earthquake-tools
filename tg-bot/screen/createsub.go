@@ -2,7 +2,6 @@ package screen
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 	"log"
 )
@@ -18,7 +17,7 @@ func NewCreateSubscriptionScreen() CreateSubscriptionScreen {
 }
 
 func (scr CreateSubscriptionScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
-	err := s.SetAwaitUserInput(msg.Chat.ID, entity.CreateSubName)
+	err := s.SetAwaitUserInput(msg.Chat.ID, scr.Encode())
 	if err != nil {
 		log.Printf("cannot set chat state: %v", err)
 		return

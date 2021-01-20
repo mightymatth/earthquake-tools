@@ -13,8 +13,9 @@ const Sub Cmd = "SUB"
 
 func NewSubscriptionScreen(subID string, reset ResetInputType) SubscriptionScreen {
 	return SubscriptionScreen{Screen{
-		Cmd: Subs,
-		Params: Params{P1: subID, P2: string(reset)}}}
+		Cmd:    Subs,
+		Params: Params{P1: subID, P2: string(reset)},
+	}}
 }
 
 func (scr SubscriptionScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {

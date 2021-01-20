@@ -68,19 +68,20 @@ func NewStorage(uri string) (*Storage, error) {
 func (s *Storage) GetChatState(chatID int64) *entity.ChatState {
 	var chatStateDB ChatState
 
-	filter := bson.D{{"chat_id", bson.D{{"$eq", chatID}}}}
+	filter := bson.M{"chat_id": chatID}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := s.chatStates.FindOne(ctx, filter).Decode(&chatStateDB); err != nil {
+		log.Printf("err %v", err)
 		chatStateDB = ChatState{
 			ChatID: chatID,
 		}
 	}
 
 	chatState := entity.ChatState{
-		ChatID: chatStateDB.ChatID,
-		AwaitInput:  entity.AwaitInput(chatStateDB.AwaitInput),
+		ChatID:     chatStateDB.ChatID,
+		AwaitInput: chatStateDB.AwaitInput,
 	}
 
 	return &chatState
@@ -91,7 +92,11 @@ func (s *Storage) SetChatState(
 ) (*entity.ChatState, error) {
 	var newChatStateDB ChatState
 
-	filter := bson.D{{"chat_id", bson.D{{"$eq", chatID}}}}
+	updateDB := ChatStateUpdate{
+		AwaitInput: update.AwaitInput,
+	}
+
+	filter := bson.M{"chat_id": chatID}
 	upsert := true
 	returnDocument := options.After
 	findOptions := options.FindOneAndUpdateOptions{
@@ -103,14 +108,14 @@ func (s *Storage) SetChatState(
 	defer cancel()
 
 	if err := s.chatStates.FindOneAndUpdate(
-		ctx, filter, bson.M{"$set": update}, &findOptions,
+		ctx, filter, bson.M{"$set": updateDB}, &findOptions,
 	).Decode(&newChatStateDB); err != nil {
 		return nil, err
 	}
 
 	newChatState := entity.ChatState{
-		ChatID: newChatStateDB.ChatID,
-		AwaitInput:  entity.AwaitInput(newChatStateDB.AwaitInput),
+		ChatID:     newChatStateDB.ChatID,
+		AwaitInput: newChatStateDB.AwaitInput,
 	}
 
 	return &newChatState, nil
