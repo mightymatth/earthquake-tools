@@ -67,3 +67,22 @@ func (scr SubscriptionsScreen) subscriptionRows(
 
 	return rows
 }
+
+func ShowSubscriptions(chatID int64, bot *tgbotapi.BotAPI, s storage.Service) {
+	ResetAwaitInput(ResetInput, chatID, s)
+	subs := s.GetSubscriptions(chatID)
+	subsScreen := SubscriptionsScreen{}
+
+	msg := tgbotapi.MessageConfig{
+		BaseChat: tgbotapi.BaseChat{
+			ChatID:      chatID,
+			ReplyMarkup: subsScreen.inlineButtons(subs),
+		},
+		Text: subsScreen.text(),
+
+		ParseMode:             tgbotapi.ModeHTML,
+		DisableWebPagePreview: true,
+	}
+
+	bot.Send(msg)
+}

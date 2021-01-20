@@ -29,6 +29,9 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 	case "/start":
 		screen.ShowHome(bot, update.Message.Chat.ID)
 		return
+	case "/list":
+		screen.ShowSubscriptions(update.Message.Chat.ID, bot, s)
+		return
 	}
 
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
@@ -37,18 +40,21 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 
 	log.Printf("chatState: %v", chatState)
 
-	scr, err := screen.New(chatState.AwaitInput)
+	screener, err := screen.New(chatState.AwaitInput)
 	if err != nil {
 		log.Printf("cannot create screen: %s", err)
 		return
 	}
 
-	log.Printf("cmd %v", scr.Type().Cmd)
-
-	//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-	//msg.ReplyToMessageID = update.Message.MessageID
-	//
-	//bot.Send(msg)
-
-	screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
+	scr := screener.Type()
+	switch scr.Cmd {
+	case screen.CreateSub:
+		_, err := s.CreateSubscription(update.Message.Chat.ID, update.Message.Text)
+		if err != nil {
+			log.Printf("cannot create subscription: %v", err)
+		}
+		screen.ShowSubscriptions(update.Message.Chat.ID, bot, s)
+	default:
+		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
+	}
 }

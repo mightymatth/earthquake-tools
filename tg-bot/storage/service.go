@@ -17,6 +17,7 @@ type Repository interface {
 type Service interface {
 	GetChatState(chatID int64) *entity.ChatState
 	SetChatState(chatID int64, update *entity.ChatStateUpdate) (*entity.ChatState, error)
+	CreateSubscription(chatID int64, name string) (*entity.Subscription, error)
 	GetSubscription(subID string) (*entity.Subscription, error)
 	UpdateSubscription(subID string, subUpdate *entity.SubscriptionUpdate) (*entity.Subscription, error)
 	DeleteSubscription(subID string) error
