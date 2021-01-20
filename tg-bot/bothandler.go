@@ -34,11 +34,7 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		return
 	}
 
-	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
 	chatState := s.GetChatState(update.Message.Chat.ID)
-
-	log.Printf("chatState: %v", chatState)
 
 	screener, err := screen.New(chatState.AwaitInput)
 	if err != nil {
