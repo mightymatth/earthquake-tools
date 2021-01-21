@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -121,8 +122,13 @@ func (s *Storage) SetChatState(
 	return &newChatState, nil
 }
 
-func (s *Storage) GetSubscription(subID string) (*entity.Subscription, error) {
+func (s *Storage) GetSubscription(subHexID string) (*entity.Subscription, error) {
 	var subDB Subscription
+
+	subID, err := primitive.ObjectIDFromHex(subHexID)
+	if err != nil {
+		return nil, err
+	}
 
 	filter := bson.M{"_id": subID}
 
@@ -134,6 +140,8 @@ func (s *Storage) GetSubscription(subID string) (*entity.Subscription, error) {
 
 	sub := entity.Subscription{
 		ChatID:      subDB.ChatID,
+		SubID:       subDB.ID.Hex(),
+		Name:        subDB.Name,
 		MinMag:      subDB.MinMag,
 		EqLocations: subDB.EqLocation,
 		MyLocation:  subDB.MyLocation,
@@ -150,13 +158,13 @@ func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscri
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	dbSubID, err := s.subscriptions.InsertOne(ctx, &subCreate)
+	res, err := s.subscriptions.InsertOne(ctx, &subCreate)
 	if err != nil {
 		return nil, err
 	}
 
 	var newSubDB Subscription
-	filter := bson.M{"_id": dbSubID}
+	filter := bson.M{"_id": res.InsertedID}
 	err = s.subscriptions.FindOne(ctx, filter).Decode(&newSubDB)
 	if err != nil {
 		return nil, err
@@ -205,7 +213,12 @@ func (s *Storage) UpdateSubscription(
 	return &newSub, nil
 }
 
-func (s *Storage) DeleteSubscription(subID string) error {
+func (s *Storage) DeleteSubscription(subHexID string) error {
+	subID, err := primitive.ObjectIDFromHex(subHexID)
+	if err != nil {
+		return err
+	}
+
 	filter := bson.M{"_id": subID}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -238,6 +251,7 @@ func (s *Storage) GetSubscriptions(chatID int64) (subs []entity.Subscription) {
 
 		sub := entity.Subscription{
 			ChatID:      subDB.ChatID,
+			SubID:       subDB.ID.Hex(),
 			Name:        subDB.Name,
 			MinMag:      subDB.MinMag,
 			EqLocations: subDB.EqLocation,

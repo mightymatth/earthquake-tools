@@ -36,6 +36,11 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 
 	chatState := s.GetChatState(update.Message.Chat.ID)
 
+	if chatState.AwaitInput == "" {
+		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
+		return
+	}
+
 	screener, err := screen.New(chatState.AwaitInput)
 	if err != nil {
 		log.Printf("cannot create screen: %s", err)
@@ -48,7 +53,10 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		_, err := s.CreateSubscription(update.Message.Chat.ID, update.Message.Text)
 		if err != nil {
 			log.Printf("cannot create subscription: %v", err)
+			return
 		}
+
+		screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
 		screen.ShowSubscriptions(update.Message.Chat.ID, bot, s)
 	default:
 		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)

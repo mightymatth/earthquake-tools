@@ -64,6 +64,8 @@ func Decode(data string) (Screener, error) {
 		return NewSubscriptionScreen(p1, ResetInputType(p2)), nil
 	case CreateSub:
 		return NewCreateSubscriptionScreen(), nil
+	case DeleteSub:
+		return NewDeleteSubscriptionScreen(p1, p2), nil
 	default:
 		return nil, errors.Errorf("screen '%s' doesnt exist", cmd)
 	}

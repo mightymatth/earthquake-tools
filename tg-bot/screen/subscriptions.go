@@ -53,7 +53,8 @@ func (scr SubscriptionsScreen) subscriptionRows(
 ) (rows [][]tgbotapi.InlineKeyboardButton) {
 	tmpRow := make([]tgbotapi.InlineKeyboardButton, 0, iPerRow)
 	for i := 0; i < len(subs); i++ {
-		btn := tgbotapi.NewInlineKeyboardButtonData(subs[i].Name, NewHomeScreen().Encode())
+		btn := tgbotapi.NewInlineKeyboardButtonData(subs[i].Name,
+			NewSubscriptionScreen(subs[i].SubID, "").Encode())
 		tmpRow = append(tmpRow, btn)
 		if len(tmpRow) == 2 {
 			rows = append(rows, tmpRow)
@@ -69,7 +70,6 @@ func (scr SubscriptionsScreen) subscriptionRows(
 }
 
 func ShowSubscriptions(chatID int64, bot *tgbotapi.BotAPI, s storage.Service) {
-	ResetAwaitInput(ResetInput, chatID, s)
 	subs := s.GetSubscriptions(chatID)
 	subsScreen := SubscriptionsScreen{}
 
