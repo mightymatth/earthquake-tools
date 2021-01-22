@@ -34,7 +34,7 @@ Enter short subscription name.
 }
 
 func (scr CreateSubscriptionScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
-	cancel := tgbotapi.NewInlineKeyboardButtonData("Cancel",
+	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
 		NewSubscriptionsScreen(ResetInput).Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(

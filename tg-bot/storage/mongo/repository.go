@@ -139,14 +139,14 @@ func (s *Storage) GetSubscription(subHexID string) (*entity.Subscription, error)
 	}
 
 	sub := entity.Subscription{
-		ChatID:      subDB.ChatID,
-		SubID:       subDB.ID.Hex(),
-		Name:        subDB.Name,
-		MinMag:      subDB.MinMag,
-		EqLocations: subDB.EqLocation,
-		MyLocation:  subDB.MyLocation,
-		Radius:      subDB.Radius,
-		OffsetSec:   subDB.OffsetSec,
+		ChatID:     subDB.ChatID,
+		SubID:      subDB.ID.Hex(),
+		Name:       subDB.Name,
+		MinMag:     subDB.MinMag,
+		EqLocation: subDB.EqLocation,
+		MyLocation: subDB.MyLocation,
+		Radius:     subDB.Radius,
+		OffsetSec:  subDB.OffsetSec,
 	}
 
 	return &sub, nil
@@ -171,28 +171,42 @@ func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscri
 	}
 
 	newSub := entity.Subscription{
-		SubID:       newSubDB.ID.String(),
-		ChatID:      newSubDB.ChatID,
-		MinMag:      newSubDB.MinMag,
-		EqLocations: newSubDB.EqLocation,
-		MyLocation:  newSubDB.MyLocation,
-		Radius:      newSubDB.Radius,
-		OffsetSec:   newSubDB.OffsetSec,
+		SubID:      newSubDB.ID.String(),
+		ChatID:     newSubDB.ChatID,
+		MinMag:     newSubDB.MinMag,
+		EqLocation: newSubDB.EqLocation,
+		MyLocation: newSubDB.MyLocation,
+		Radius:     newSubDB.Radius,
+		OffsetSec:  newSubDB.OffsetSec,
 	}
 
 	return &newSub, nil
 }
 
 func (s *Storage) UpdateSubscription(
-	subID string, subUpdate *entity.SubscriptionUpdate,
+	subHexID string, subUpdate *entity.SubscriptionUpdate,
 ) (*entity.Subscription, error) {
+	subID, err := primitive.ObjectIDFromHex(subHexID)
+	if err != nil {
+		return nil, err
+	}
+
+	subUpdateDB := SubscriptionUpdate{
+		Name:       subUpdate.Name,
+		MinMag:     subUpdate.MinMag,
+		EqLocation: subUpdate.EqLocation,
+		MyLocation: subUpdate.MyLocation,
+		Radius:     subUpdate.Radius,
+		OffsetSec:  subUpdate.OffsetSec,
+	}
+
 	var newSubDB Subscription
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	filter := bson.M{"_id": subID}
-	update := bson.M{"$set": subUpdate}
+	update := bson.M{"$set": subUpdateDB}
 
 	if err := s.subscriptions.FindOneAndUpdate(
 		ctx, filter, update,
@@ -201,13 +215,13 @@ func (s *Storage) UpdateSubscription(
 	}
 
 	newSub := entity.Subscription{
-		SubID:       newSubDB.ID.String(),
-		ChatID:      newSubDB.ChatID,
-		MinMag:      newSubDB.MinMag,
-		EqLocations: newSubDB.EqLocation,
-		MyLocation:  newSubDB.MyLocation,
-		Radius:      newSubDB.Radius,
-		OffsetSec:   newSubDB.OffsetSec,
+		SubID:      newSubDB.ID.String(),
+		ChatID:     newSubDB.ChatID,
+		MinMag:     newSubDB.MinMag,
+		EqLocation: newSubDB.EqLocation,
+		MyLocation: newSubDB.MyLocation,
+		Radius:     newSubDB.Radius,
+		OffsetSec:  newSubDB.OffsetSec,
 	}
 
 	return &newSub, nil
@@ -250,14 +264,14 @@ func (s *Storage) GetSubscriptions(chatID int64) (subs []entity.Subscription) {
 		}
 
 		sub := entity.Subscription{
-			ChatID:      subDB.ChatID,
-			SubID:       subDB.ID.Hex(),
-			Name:        subDB.Name,
-			MinMag:      subDB.MinMag,
-			EqLocations: subDB.EqLocation,
-			MyLocation:  subDB.MyLocation,
-			Radius:      subDB.Radius,
-			OffsetSec:   subDB.OffsetSec,
+			ChatID:     subDB.ChatID,
+			SubID:      subDB.ID.Hex(),
+			Name:       subDB.Name,
+			MinMag:     subDB.MinMag,
+			EqLocation: subDB.EqLocation,
+			MyLocation: subDB.MyLocation,
+			Radius:     subDB.Radius,
+			OffsetSec:  subDB.OffsetSec,
 		}
 
 		subs = append(subs, sub)

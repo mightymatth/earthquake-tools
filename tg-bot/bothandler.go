@@ -2,9 +2,11 @@ package main
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/screen"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 	"log"
+	"strconv"
 )
 
 func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service) {
@@ -58,6 +60,25 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 
 		screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
 		screen.ShowSubscriptions(update.Message.Chat.ID, bot, s)
+	case screen.SetMagnitude:
+		mag, err := strconv.ParseFloat(update.Message.Text, 64)
+		if err != nil {
+			setMagScreen := screen.SetMagnitudeScreen{Screen: scr}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setMagScreen.WrongInput())
+			bot.Send(msg)
+			screen.ShowSetMagnitude(update.Message.Chat.ID, setMagScreen.Params.P1, bot, s)
+			return
+		}
+
+		magUpdate := entity.SubscriptionUpdate{MinMag: mag}
+		_, err = s.UpdateSubscription(scr.Params.P1, &magUpdate)
+		if err != nil {
+			log.Printf("cannot set magnitude to subscription: %v", err)
+			return
+		}
+
+		screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
+		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
 	default:
 		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
 	}
