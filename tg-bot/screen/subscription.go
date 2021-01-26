@@ -37,18 +37,16 @@ func (scr SubscriptionScreen) text(sub *entity.Subscription) string {
 	return fmt.Sprintf(`
 Current subscription settings:
 Name: %s
-Magnitude: ≥%.1f
-Earthquake location: %s
+Magnitude: ≥ %.1f
+Delay: ≤ %.0f min
 My location: %s
 Radius: %.1f km
-Time offset: %d s
-`, sub.Name, sub.MinMag, sub.EqLocation,
-		sub.MyLocation, sub.Radius, sub.OffsetSec)
+`, sub.Name, sub.MinMag, sub.Delay, sub.MyLocation, sub.Radius)
 }
 
 func (scr SubscriptionScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	magnitude := tgbotapi.NewInlineKeyboardButtonData("📶 Magnitude", NewSetMagnitudeScreen(sub.SubID).Encode())
-	delay := tgbotapi.NewInlineKeyboardButtonData("⏳ Delay", " ")
+	delay := tgbotapi.NewInlineKeyboardButtonData("⏳ Delay", NewSetDelayScreen(sub.SubID).Encode())
 	home := tgbotapi.NewInlineKeyboardButtonData("« Subscriptions",
 		NewSubscriptionsScreen("").Encode())
 	deleteSub := tgbotapi.NewInlineKeyboardButtonData("🗑 Delete",

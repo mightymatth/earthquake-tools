@@ -143,10 +143,9 @@ func (s *Storage) GetSubscription(subHexID string) (*entity.Subscription, error)
 		SubID:      subDB.ID.Hex(),
 		Name:       subDB.Name,
 		MinMag:     subDB.MinMag,
-		EqLocation: subDB.EqLocation,
+		Delay:      subDB.Delay,
 		MyLocation: subDB.MyLocation,
 		Radius:     subDB.Radius,
-		OffsetSec:  subDB.OffsetSec,
 	}
 
 	return &sub, nil
@@ -174,10 +173,9 @@ func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscri
 		SubID:      newSubDB.ID.String(),
 		ChatID:     newSubDB.ChatID,
 		MinMag:     newSubDB.MinMag,
-		EqLocation: newSubDB.EqLocation,
+		Delay:      newSubDB.Delay,
 		MyLocation: newSubDB.MyLocation,
 		Radius:     newSubDB.Radius,
-		OffsetSec:  newSubDB.OffsetSec,
 	}
 
 	return &newSub, nil
@@ -194,10 +192,9 @@ func (s *Storage) UpdateSubscription(
 	subUpdateDB := SubscriptionUpdate{
 		Name:       subUpdate.Name,
 		MinMag:     subUpdate.MinMag,
-		EqLocation: subUpdate.EqLocation,
+		Delay:      subUpdate.Delay,
 		MyLocation: subUpdate.MyLocation,
 		Radius:     subUpdate.Radius,
-		OffsetSec:  subUpdate.OffsetSec,
 	}
 
 	var newSubDB Subscription
@@ -218,10 +215,9 @@ func (s *Storage) UpdateSubscription(
 		SubID:      newSubDB.ID.String(),
 		ChatID:     newSubDB.ChatID,
 		MinMag:     newSubDB.MinMag,
-		EqLocation: newSubDB.EqLocation,
+		Delay:      newSubDB.Delay,
 		MyLocation: newSubDB.MyLocation,
 		Radius:     newSubDB.Radius,
-		OffsetSec:  newSubDB.OffsetSec,
 	}
 
 	return &newSub, nil
@@ -268,10 +264,9 @@ func (s *Storage) GetSubscriptions(chatID int64) (subs []entity.Subscription) {
 			SubID:      subDB.ID.Hex(),
 			Name:       subDB.Name,
 			MinMag:     subDB.MinMag,
-			EqLocation: subDB.EqLocation,
+			Delay:      subDB.Delay,
 			MyLocation: subDB.MyLocation,
 			Radius:     subDB.Radius,
-			OffsetSec:  subDB.OffsetSec,
 		}
 
 		subs = append(subs, sub)

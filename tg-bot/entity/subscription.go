@@ -5,17 +5,15 @@ type Subscription struct {
 	SubID      string
 	Name       string
 	MinMag     float64
-	EqLocation string
+	Delay      float64
 	MyLocation string
 	Radius     float64
-	OffsetSec  int32
 }
 
 type SubscriptionUpdate struct {
 	Name       string
 	MinMag     float64
-	EqLocation string
+	Delay      float64
 	MyLocation string
 	Radius     float64
-	OffsetSec  int32
 }

@@ -52,6 +52,12 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 	scr := screener.Type()
 	switch scr.Cmd {
 	case screen.CreateSub:
+		if update.Message.Text == "" {
+			// TODO: show user a message should be text.
+			// This happens in scenario when a user sends sticker or something else...
+			return
+		}
+
 		_, err := s.CreateSubscription(update.Message.Chat.ID, update.Message.Text)
 		if err != nil {
 			log.Printf("cannot create subscription: %v", err)
@@ -74,6 +80,25 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		_, err = s.UpdateSubscription(scr.Params.P1, &magUpdate)
 		if err != nil {
 			log.Printf("cannot set magnitude to subscription: %v", err)
+			return
+		}
+
+		screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
+		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
+	case screen.SetDelay:
+		delay, err := strconv.ParseFloat(update.Message.Text, 64)
+		if err != nil {
+			setDelayScreen := screen.SetDelayScreen{Screen: scr}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setDelayScreen.WrongInput())
+			bot.Send(msg)
+			screen.ShowSetDelay(update.Message.Chat.ID, setDelayScreen.Params.P1, bot, s)
+			return
+		}
+
+		delayUpdate := entity.SubscriptionUpdate{Delay: delay}
+		_, err = s.UpdateSubscription(scr.Params.P1, &delayUpdate)
+		if err != nil {
+			log.Printf("cannot set delay to subscription: %v", err)
 			return
 		}
 

@@ -126,6 +126,7 @@ func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) {
 	for update := range updates {
 		botHandler(update, bot, s)
 	}
+	log.Printf("No updates anymore")
 }
 
 func getEnv(key string, defaultVal string) string {
