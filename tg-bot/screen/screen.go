@@ -70,6 +70,8 @@ func Decode(data string) (Screener, error) {
 		return NewSetMagnitudeScreen(p1), nil
 	case SetDelay:
 		return NewSetDelayScreen(p1), nil
+	case SetRadius:
+		return NewSetRadiusScreen(p1), nil
 	default:
 		return nil, errors.Errorf("screen '%s' doesnt exist", cmd)
 	}

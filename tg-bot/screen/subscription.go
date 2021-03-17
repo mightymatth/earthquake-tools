@@ -47,6 +47,7 @@ Radius: %.1f km
 func (scr SubscriptionScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	magnitude := tgbotapi.NewInlineKeyboardButtonData("📶 Magnitude", NewSetMagnitudeScreen(sub.SubID).Encode())
 	delay := tgbotapi.NewInlineKeyboardButtonData("⏳ Delay", NewSetDelayScreen(sub.SubID).Encode())
+	radius := tgbotapi.NewInlineKeyboardButtonData("⭕️ Radius", NewSetRadiusScreen(sub.SubID).Encode())
 	home := tgbotapi.NewInlineKeyboardButtonData("« Subscriptions",
 		NewSubscriptionsScreen("").Encode())
 	deleteSub := tgbotapi.NewInlineKeyboardButtonData("🗑 Delete",
@@ -54,6 +55,7 @@ func (scr SubscriptionScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(magnitude, delay),
+		tgbotapi.NewInlineKeyboardRow(radius),
 		tgbotapi.NewInlineKeyboardRow(home, deleteSub),
 	)
 	return &kb

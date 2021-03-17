@@ -102,7 +102,26 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 			return
 		}
 
-		screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
+		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
+		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
+	case screen.SetRadius:
+		radius, err := strconv.ParseFloat(update.Message.Text, 64)
+		if err != nil {
+			setRadiusScreen := screen.SetRadiusScreen{Screen: scr}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setRadiusScreen.WrongInput())
+			bot.Send(msg)
+			screen.ShowSetRadius(update.Message.Chat.ID, setRadiusScreen.Params.P1, bot, s)
+			return
+		}
+
+		radiusUpdate := entity.SubscriptionUpdate{Radius: radius}
+		_, err = s.UpdateSubscription(scr.Params.P1, &radiusUpdate)
+		if err != nil {
+			log.Printf("cannot set radius to subscription: %v", err)
+			return
+		}
+
+		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
 		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
 	default:
 		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
