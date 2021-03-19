@@ -19,7 +19,7 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 
 		scr.TakeAction(bot, update.CallbackQuery.Message, s)
 
-		bot.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: update.CallbackQuery.ID})
+		_, _ = bot.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: update.CallbackQuery.ID})
 		return
 	}
 
@@ -64,14 +64,14 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 			return
 		}
 
-		screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
+		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
 		screen.ShowSubscriptions(update.Message.Chat.ID, bot, s)
 	case screen.SetMagnitude:
 		mag, err := strconv.ParseFloat(update.Message.Text, 64)
 		if err != nil {
 			setMagScreen := screen.SetMagnitudeScreen{Screen: scr}
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setMagScreen.WrongInput())
-			bot.Send(msg)
+			_, _ = bot.Send(msg)
 			screen.ShowSetMagnitude(update.Message.Chat.ID, setMagScreen.Params.P1, bot, s)
 			return
 		}
@@ -83,14 +83,14 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 			return
 		}
 
-		screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
+		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
 		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
 	case screen.SetDelay:
 		delay, err := strconv.ParseFloat(update.Message.Text, 64)
 		if err != nil {
 			setDelayScreen := screen.SetDelayScreen{Screen: scr}
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setDelayScreen.WrongInput())
-			bot.Send(msg)
+			_, _ = bot.Send(msg)
 			screen.ShowSetDelay(update.Message.Chat.ID, setDelayScreen.Params.P1, bot, s)
 			return
 		}
@@ -102,14 +102,39 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 			return
 		}
 
-		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
+		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
+		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
+	case screen.SetLocation:
+		inputLoc := update.Message.Location
+
+		if inputLoc == nil {
+			setLocationScreen := screen.SetLocationScreen{Screen: scr}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setLocationScreen.WrongInput())
+			_, _ = bot.Send(msg)
+			screen.ShowSetLocation(update.Message.Chat.ID, setLocationScreen.Params.P1, bot, s)
+			return
+		}
+
+		location := entity.Location{
+			Lat: inputLoc.Latitude,
+			Lng: inputLoc.Longitude,
+		}
+
+		locationUpdate := entity.SubscriptionUpdate{MyLocation: &location}
+		_, err = s.UpdateSubscription(scr.Params.P1, &locationUpdate)
+		if err != nil {
+			log.Printf("cannot set location to subscription: %v", err)
+			return
+		}
+
+		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
 		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
 	case screen.SetRadius:
 		radius, err := strconv.ParseFloat(update.Message.Text, 64)
 		if err != nil {
 			setRadiusScreen := screen.SetRadiusScreen{Screen: scr}
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setRadiusScreen.WrongInput())
-			bot.Send(msg)
+			_, _ = bot.Send(msg)
 			screen.ShowSetRadius(update.Message.Chat.ID, setRadiusScreen.Params.P1, bot, s)
 			return
 		}
@@ -121,7 +146,7 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 			return
 		}
 
-		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, s)
+		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
 		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
 	default:
 		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)

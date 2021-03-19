@@ -6,7 +6,7 @@ type Subscription struct {
 	Name       string
 	MinMag     float64
 	Delay      float64
-	MyLocation string
+	MyLocation Location
 	Radius     float64
 }
 
@@ -14,6 +14,10 @@ type SubscriptionUpdate struct {
 	Name       string
 	MinMag     float64
 	Delay      float64
-	MyLocation string
+	MyLocation *Location
 	Radius     float64
+}
+
+type Location struct {
+	Lat, Lng float64
 }

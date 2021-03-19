@@ -21,7 +21,7 @@ func NewSubscriptionScreen(subID string, reset ResetInputType) SubscriptionScree
 }
 
 func (scr SubscriptionScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
-	ResetAwaitInput(ResetInputType(scr.Params.P2), msg.Chat.ID, s)
+	_ = ResetAwaitInput(ResetInputType(scr.Params.P2), msg.Chat.ID, bot, s)
 
 	sub, err := s.GetSubscription(scr.Params.P1)
 	if err != nil {
@@ -41,12 +41,13 @@ Magnitude: ≥ %.1f
 Delay: ≤ %.0f min
 My location: %s
 Radius: %.1f km
-`, sub.Name, sub.MinMag, sub.Delay, sub.MyLocation, sub.Radius)
+`, sub.Name, sub.MinMag, sub.Delay, LocationToHTMLString(sub.MyLocation), sub.Radius)
 }
 
 func (scr SubscriptionScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	magnitude := tgbotapi.NewInlineKeyboardButtonData("📶 Magnitude", NewSetMagnitudeScreen(sub.SubID).Encode())
 	delay := tgbotapi.NewInlineKeyboardButtonData("⏳ Delay", NewSetDelayScreen(sub.SubID).Encode())
+	location := tgbotapi.NewInlineKeyboardButtonData("📍️ Location", NewSetLocationScreen(sub.SubID).Encode())
 	radius := tgbotapi.NewInlineKeyboardButtonData("⭕️ Radius", NewSetRadiusScreen(sub.SubID).Encode())
 	home := tgbotapi.NewInlineKeyboardButtonData("« Subscriptions",
 		NewSubscriptionsScreen("").Encode())
@@ -55,7 +56,7 @@ func (scr SubscriptionScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(magnitude, delay),
-		tgbotapi.NewInlineKeyboardRow(radius),
+		tgbotapi.NewInlineKeyboardRow(location, radius),
 		tgbotapi.NewInlineKeyboardRow(home, deleteSub),
 	)
 	return &kb
@@ -81,4 +82,9 @@ func ShowSubscription(chatID int64, subID string, bot *tgbotapi.BotAPI, s storag
 	}
 
 	bot.Send(msg)
+}
+
+func LocationToHTMLString(loc entity.Location) string {
+	return fmt.Sprintf("lat: %f, lng: %f (<a href=\"http://www.google.com/maps/place/%f,%f\">map link</a>)",
+		loc.Lat, loc.Lng, loc.Lat, loc.Lng)
 }

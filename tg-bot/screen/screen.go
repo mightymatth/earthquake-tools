@@ -70,6 +70,8 @@ func Decode(data string) (Screener, error) {
 		return NewSetMagnitudeScreen(p1), nil
 	case SetDelay:
 		return NewSetDelayScreen(p1), nil
+	case SetLocation:
+		return NewSetLocationScreen(p1), nil
 	case SetRadius:
 		return NewSetRadiusScreen(p1), nil
 	default:
@@ -77,7 +79,7 @@ func Decode(data string) (Screener, error) {
 	}
 }
 
-func ResetAwaitInput(resetInput ResetInputType, chatID int64, s storage.Service) error {
+func ResetAwaitInput(resetInput ResetInputType, chatID int64, bot *tgbotapi.BotAPI, s storage.Service) error {
 	switch resetInput {
 	case ResetInput:
 		err := s.SetAwaitUserInput(chatID, "")

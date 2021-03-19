@@ -20,11 +20,11 @@ func NewSubscriptionsScreen(reset ResetInputType) SubscriptionsScreen {
 }
 
 func (scr SubscriptionsScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
-	ResetAwaitInput(ResetInputType(scr.Params.P1), msg.Chat.ID, s)
+	_ = ResetAwaitInput(ResetInputType(scr.Params.P1), msg.Chat.ID, bot, s)
 
 	subs := s.GetSubscriptions(msg.Chat.ID)
 	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(), scr.inlineButtons(subs))
-	bot.Send(message)
+	_, _ = bot.Send(message)
 }
 
 func (scr SubscriptionsScreen) text() string {

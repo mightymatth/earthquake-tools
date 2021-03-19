@@ -139,13 +139,16 @@ func (s *Storage) GetSubscription(subHexID string) (*entity.Subscription, error)
 	}
 
 	sub := entity.Subscription{
-		ChatID:     subDB.ChatID,
-		SubID:      subDB.ID.Hex(),
-		Name:       subDB.Name,
-		MinMag:     subDB.MinMag,
-		Delay:      subDB.Delay,
-		MyLocation: subDB.MyLocation,
-		Radius:     subDB.Radius,
+		ChatID: subDB.ChatID,
+		SubID:  subDB.ID.Hex(),
+		Name:   subDB.Name,
+		MinMag: subDB.MinMag,
+		Delay:  subDB.Delay,
+		MyLocation: entity.Location{
+			Lat: subDB.MyLocation.Lat,
+			Lng: subDB.MyLocation.Lng,
+		},
+		Radius: subDB.Radius,
 	}
 
 	return &sub, nil
@@ -170,12 +173,15 @@ func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscri
 	}
 
 	newSub := entity.Subscription{
-		SubID:      newSubDB.ID.String(),
-		ChatID:     newSubDB.ChatID,
-		MinMag:     newSubDB.MinMag,
-		Delay:      newSubDB.Delay,
-		MyLocation: newSubDB.MyLocation,
-		Radius:     newSubDB.Radius,
+		SubID:  newSubDB.ID.String(),
+		ChatID: newSubDB.ChatID,
+		MinMag: newSubDB.MinMag,
+		Delay:  newSubDB.Delay,
+		MyLocation: entity.Location{
+			Lat: newSubDB.MyLocation.Lat,
+			Lng: newSubDB.MyLocation.Lng,
+		},
+		Radius: newSubDB.Radius,
 	}
 
 	return &newSub, nil
@@ -189,11 +195,20 @@ func (s *Storage) UpdateSubscription(
 		return nil, err
 	}
 
+	var myLocation *Point
+
+	if subUpdate.MyLocation != nil {
+		myLocation = &Point{
+			Lat: subUpdate.MyLocation.Lat,
+			Lng: subUpdate.MyLocation.Lng,
+		}
+	}
+
 	subUpdateDB := SubscriptionUpdate{
 		Name:       subUpdate.Name,
 		MinMag:     subUpdate.MinMag,
 		Delay:      subUpdate.Delay,
-		MyLocation: subUpdate.MyLocation,
+		MyLocation: myLocation,
 		Radius:     subUpdate.Radius,
 	}
 
@@ -212,12 +227,15 @@ func (s *Storage) UpdateSubscription(
 	}
 
 	newSub := entity.Subscription{
-		SubID:      newSubDB.ID.String(),
-		ChatID:     newSubDB.ChatID,
-		MinMag:     newSubDB.MinMag,
-		Delay:      newSubDB.Delay,
-		MyLocation: newSubDB.MyLocation,
-		Radius:     newSubDB.Radius,
+		SubID:  newSubDB.ID.String(),
+		ChatID: newSubDB.ChatID,
+		MinMag: newSubDB.MinMag,
+		Delay:  newSubDB.Delay,
+		MyLocation: entity.Location{
+			Lat: newSubDB.MyLocation.Lat,
+			Lng: newSubDB.MyLocation.Lng,
+		},
+		Radius: newSubDB.Radius,
 	}
 
 	return &newSub, nil
@@ -260,13 +278,16 @@ func (s *Storage) GetSubscriptions(chatID int64) (subs []entity.Subscription) {
 		}
 
 		sub := entity.Subscription{
-			ChatID:     subDB.ChatID,
-			SubID:      subDB.ID.Hex(),
-			Name:       subDB.Name,
-			MinMag:     subDB.MinMag,
-			Delay:      subDB.Delay,
-			MyLocation: subDB.MyLocation,
-			Radius:     subDB.Radius,
+			ChatID: subDB.ChatID,
+			SubID:  subDB.ID.Hex(),
+			Name:   subDB.Name,
+			MinMag: subDB.MinMag,
+			Delay:  subDB.Delay,
+			MyLocation: entity.Location{
+				Lat: subDB.MyLocation.Lat,
+				Lng: subDB.MyLocation.Lng,
+			},
+			Radius: subDB.Radius,
 		}
 
 		subs = append(subs, sub)
