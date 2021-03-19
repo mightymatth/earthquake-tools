@@ -22,9 +22,13 @@ func (scr HomeScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s 
 
 func (scr HomeScreen) text() string {
 	return `
-Welcome and welcome,
+Welcome to <i>EMSC Events ⚠️</i> Bot
 
-You are the best!
+It makes you able to <b>subscribe</b> to <b>certain rules</b> and <b>send notifications</b> on earthquakes
+with given parameters.
+
+Developed by @mpevec
+Source code: <a href="https://github.com/mightymatth/earthquake-tools">GitHub</a>
 `
 }
 
