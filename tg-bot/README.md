@@ -15,6 +15,16 @@ This command will:
   send them to the bot,
 * start bot to listen to user events.
 
+## Deployment
+
+```shell
+# build docker image
+docker build -t eq-tg-bot .
+
+# run docker container
+docker run -d -e MONGO_URI="mongodb+srv://.../?retryWrites=true&w=majority" -e TELEGRAM_BOT_TOKEN="133:AAFT2PIKiqw" -e TIMEZONEDB_API_KEY="VY98UH" --restart=always eq-tg-bot:latest
+```
+
 ### Bot Father configuration
 
 #### Name
