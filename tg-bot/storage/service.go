@@ -12,6 +12,7 @@ type Repository interface {
 	UpdateSubscription(subID string, subUpdate *entity.SubscriptionUpdate) (*entity.Subscription, error)
 	DeleteSubscription(subID string) error
 	GetSubscriptions(chatID int64) []entity.Subscription
+	GetEventSubscribers(location entity.EventData) (chatIDs []int64, err error)
 }
 
 type Service interface {
@@ -22,6 +23,7 @@ type Service interface {
 	UpdateSubscription(subID string, subUpdate *entity.SubscriptionUpdate) (*entity.Subscription, error)
 	DeleteSubscription(subID string) error
 	GetSubscriptions(chatID int64) []entity.Subscription
+	GetEventSubscribers(location entity.EventData) (chatIDs []int64, err error)
 
 	SetAwaitUserInput(chatID int64, awaitInput string) error
 }
@@ -74,4 +76,8 @@ func (s *service) SetAwaitUserInput(chatID int64, awaitInput string) error {
 	}
 
 	return nil
+}
+
+func (s *service) GetEventSubscribers(eventData entity.EventData) (chatIDs []int64, err error) {
+	return s.r.GetEventSubscribers(eventData)
 }

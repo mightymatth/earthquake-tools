@@ -6,6 +6,7 @@ import (
 	"github.com/dustin/go-humanize"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/joho/godotenv"
+	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage/mongo"
 	"log"
@@ -30,24 +31,40 @@ func main() {
 
 	service := storage.NewService(storageImpl)
 
-	http.HandleFunc("/", EarthquakeEventServer(bot))
+	http.HandleFunc("/", EarthquakeEventServer(bot, service))
 	go http.ListenAndServe(":3300", nil)
 
 	TgBotServer(bot, service)
 }
 
-func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http.Request) {
+func EarthquakeEventServer(bot *tgbotapi.BotAPI, s storage.Service) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		event, err := ParseEvent(r.Body)
 		if err != nil {
-			log.Printf("process event: %v", err)
+			log.Printf("process event: %v\n", err)
 		}
 
 		if event.Action != "create" {
 			return
 		}
 
-		chatID := 307010667
+		eventData := entity.EventData{
+			Magnitude: event.Data.Properties.Mag,
+			Delay:     time.Now().Sub(event.Data.Properties.Time).Minutes(),
+			Location: entity.Location{
+				Lat: event.Data.Properties.Lat,
+				Lng: event.Data.Properties.Lon,
+			},
+		}
+
+		chatIDs, err := s.GetEventSubscribers(eventData)
+		if err != nil {
+			log.Printf("cannot get event subscribers: %v\n", err)
+		}
+
+		if len(chatIDs) < 1 {
+			return
+		}
 
 		text := fmt.Sprintf(
 			`
@@ -74,16 +91,16 @@ func EarthquakeEventServer(bot *tgbotapi.BotAPI) func(http.ResponseWriter, *http
 		)
 
 		msg := tgbotapi.MessageConfig{
-			BaseChat: tgbotapi.BaseChat{
-				ChatID: int64(chatID),
-			},
 			Text:                  text,
 			ParseMode:             tgbotapi.ModeHTML,
 			DisableWebPagePreview: true,
 		}
 		msg.ReplyMarkup = EventButtons(event)
 
-		_, _ = bot.Send(msg)
+		for _, chatID := range chatIDs {
+			msg.BaseChat.ChatID = chatID
+			_, _ = bot.Send(msg)
+		}
 	}
 }
 

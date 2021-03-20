@@ -289,6 +289,54 @@ func (s *Storage) GetSubscriptions(chatID int64) (subs []entity.Subscription) {
 	return subs
 }
 
+func (s *Storage) GetEventSubscribers(eventData entity.EventData) (chatIDs []int64, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.D{
+		{"observe_area", bson.M{"$geoIntersects": bson.M{"$geometry": bson.D{
+			{"type", "Point"},
+			{"coordinates", toPoint(&eventData.Location).ToArray()},
+		}}}},
+		{"min_mag", bson.M{"$lte": eventData.Magnitude}},
+		{"delay", bson.M{"$gte": eventData.Delay}},
+	}
+
+	projection := &options.FindOptions{
+		Projection: bson.M{"chat_id": true},
+	}
+
+	cursor, err := s.subscriptions.Find(ctx, filter, projection)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var subDB SubscriptionChatID
+		err := cursor.Decode(&subDB)
+		if err != nil {
+			continue
+		}
+
+		chatIDs = append(chatIDs, subDB.ChatID)
+	}
+
+	return unique(chatIDs), nil
+}
+
+func unique(int64Slice []int64) []int64 {
+	keys := make(map[int64]bool)
+	var list []int64
+	for _, entry := range int64Slice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
+
 func (p *Point) toLocation() *entity.Location {
 	if p == nil {
 		return nil
@@ -343,10 +391,10 @@ func setObserveArea(subID primitive.ObjectID, sub *SubscriptionUpdate, s *Storag
 	latR := (radius / float64(earthRadius)) * radToDeg
 	lngR := latR / math.Cos(location.Lat*degToRad)
 
-	points := make([]PointAsArray, pointsTotal + 1, pointsTotal + 1)
+	points := make([]PointAsArray, pointsTotal+1, pointsTotal+1)
 
 	for i := 0; i < pointsTotal+1; i++ {
-		theta := math.Pi * float64(i / (pointsTotal / 2))
+		theta := math.Pi * float64(i) / (float64(pointsTotal) / 2)
 		ey := location.Lat + (latR * math.Sin(theta))
 		ex := location.Lng + (lngR * math.Cos(theta))
 		points[i] = Point{Lat: ey, Lng: ex}.ToArray()

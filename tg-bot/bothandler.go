@@ -36,7 +36,8 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		return
 	}
 
-	chatState := s.GetChatState(update.Message.Chat.ID)
+
+	chatState := storage.Service.GetChatState(s, update.Message.Chat.ID)
 
 	if chatState.AwaitInput == "" {
 		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
@@ -58,7 +59,7 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 			return
 		}
 
-		_, err := s.CreateSubscription(update.Message.Chat.ID, update.Message.Text)
+		_, err := storage.Service.CreateSubscription(s, update.Message.Chat.ID, update.Message.Text)
 		if err != nil {
 			log.Printf("cannot create subscription: %v", err)
 			return
@@ -77,7 +78,7 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		}
 
 		magUpdate := entity.SubscriptionUpdate{MinMag: mag}
-		_, err = s.UpdateSubscription(scr.Params.P1, &magUpdate)
+		_, err = storage.Service.UpdateSubscription(s, scr.Params.P1, &magUpdate)
 		if err != nil {
 			log.Printf("cannot set magnitude to subscription: %v", err)
 			return
@@ -96,7 +97,7 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		}
 
 		delayUpdate := entity.SubscriptionUpdate{Delay: delay}
-		_, err = s.UpdateSubscription(scr.Params.P1, &delayUpdate)
+		_, err = storage.Service.UpdateSubscription(s, scr.Params.P1, &delayUpdate)
 		if err != nil {
 			log.Printf("cannot set delay to subscription: %v", err)
 			return
@@ -121,7 +122,7 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		}
 
 		locationUpdate := entity.SubscriptionUpdate{Location: &location}
-		_, err = s.UpdateSubscription(scr.Params.P1, &locationUpdate)
+		_, err = storage.Service.UpdateSubscription(s, scr.Params.P1, &locationUpdate)
 		if err != nil {
 			log.Printf("cannot set location to subscription: %v", err)
 			return
@@ -140,7 +141,7 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		}
 
 		radiusUpdate := entity.SubscriptionUpdate{Radius: radius}
-		_, err = s.UpdateSubscription(scr.Params.P1, &radiusUpdate)
+		_, err = storage.Service.UpdateSubscription(s, scr.Params.P1, &radiusUpdate)
 		if err != nil {
 			log.Printf("cannot set radius to subscription: %v", err)
 			return

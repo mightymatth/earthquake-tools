@@ -54,3 +54,7 @@ func NewObserveArea(path Path) *ObserveArea {
 		[]Path{path},
 	}
 }
+
+type SubscriptionChatID struct {
+	ChatID int64 `bson:"chat_id,omitempty"`
+}

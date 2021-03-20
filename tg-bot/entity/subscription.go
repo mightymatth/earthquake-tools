@@ -21,3 +21,9 @@ type SubscriptionUpdate struct {
 type Location struct {
 	Lat, Lng float64
 }
+
+type EventData struct {
+	Magnitude float64
+	Delay     float64
+	Location  Location
+}
