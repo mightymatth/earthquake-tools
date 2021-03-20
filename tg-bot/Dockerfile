@@ -13,7 +13,6 @@ RUN CGO_ENABLED=0 go build -ldflags '-w -s' -o /out/main .
 
 
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
 WORKDIR /root
 COPY --from=builder /out/main .
 
