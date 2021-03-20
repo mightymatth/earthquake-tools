@@ -120,7 +120,7 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 			Lng: inputLoc.Longitude,
 		}
 
-		locationUpdate := entity.SubscriptionUpdate{MyLocation: &location}
+		locationUpdate := entity.SubscriptionUpdate{Location: &location}
 		_, err = s.UpdateSubscription(scr.Params.P1, &locationUpdate)
 		if err != nil {
 			log.Printf("cannot set location to subscription: %v", err)

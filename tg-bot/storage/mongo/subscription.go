@@ -8,17 +8,17 @@ type Subscription struct {
 	ChatID      int64              `bson:"chat_id,omitempty"`
 	MinMag      float64            `bson:"min_mag,omitempty"`
 	Delay       float64            `bson:"delay,omitempty"`
-	MyLocation  Point              `bson:"my_location,omitempty"`
+	Location    *Point             `bson:"location,omitempty"`
 	Radius      float64            `bson:"radius,omitempty"`
-	ObserveArea ObserveArea        `bson:"observe_area,omitempty"`
+	ObserveArea *ObserveArea       `bson:"observe_area,omitempty"`
 }
 
 type SubscriptionUpdate struct {
-	Name        string      `bson:"name,omitempty"`
-	MinMag      float64     `bson:"min_mag,omitempty"`
-	Delay       float64     `bson:"delay,omitempty"`
-	MyLocation  *Point       `bson:"my_location,omitempty"`
-	Radius      float64     `bson:"radius,omitempty"`
+	Name        string       `bson:"name,omitempty"`
+	MinMag      float64      `bson:"min_mag,omitempty"`
+	Delay       float64      `bson:"delay,omitempty"`
+	Location    *Point       `bson:"location,omitempty"`
+	Radius      float64      `bson:"radius,omitempty"`
 	ObserveArea *ObserveArea `bson:"observe_area,omitempty"`
 }
 
@@ -48,8 +48,8 @@ type Path []PointAsArray
 type PointAsArray [2]float64
 
 //NewObserveArea creates a GeoJSON type Polygon with a single path (called exterior ring).
-func NewObserveArea(path Path) ObserveArea {
-	return ObserveArea{
+func NewObserveArea(path Path) *ObserveArea {
+	return &ObserveArea{
 		"Polygon",
 		[]Path{path},
 	}

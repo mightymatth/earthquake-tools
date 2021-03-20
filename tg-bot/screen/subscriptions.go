@@ -38,7 +38,7 @@ func (scr SubscriptionsScreen) inlineButtons(
 	subs []entity.Subscription,
 ) *tgbotapi.InlineKeyboardMarkup {
 	home := tgbotapi.NewInlineKeyboardButtonData("« Home", NewHomeScreen().Encode())
-	newSub := tgbotapi.NewInlineKeyboardButtonData("+ New", NewCreateSubscriptionScreen().Encode())
+	newSub := tgbotapi.NewInlineKeyboardButtonData("＋ New", NewCreateSubscriptionScreen().Encode())
 
 	rows := append(
 		scr.subscriptionRows(subs, 2),
@@ -56,7 +56,7 @@ func (scr SubscriptionsScreen) subscriptionRows(
 		btn := tgbotapi.NewInlineKeyboardButtonData(subs[i].Name,
 			NewSubscriptionScreen(subs[i].SubID, "").Encode())
 		tmpRow = append(tmpRow, btn)
-		if len(tmpRow) == 2 {
+		if len(tmpRow) == iPerRow {
 			rows = append(rows, tmpRow)
 			tmpRow = make([]tgbotapi.InlineKeyboardButton, 0, iPerRow)
 		}

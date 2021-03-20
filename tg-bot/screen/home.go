@@ -24,8 +24,7 @@ func (scr HomeScreen) text() string {
 	return `
 Welcome to <i>EMSC Events ⚠️</i> Bot
 
-It makes you able to <b>subscribe</b> to <b>certain rules</b> and <b>send notifications</b> on earthquakes
-with given parameters.
+It makes you able to receive notifications of recent earthquakes by making subscriptions configured with parameters such as magnitude, location, and observing radius.
 
 Developed by @mpevec
 Source code: <a href="https://github.com/mightymatth/earthquake-tools">GitHub</a>

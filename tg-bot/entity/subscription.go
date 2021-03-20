@@ -1,21 +1,21 @@
 package entity
 
 type Subscription struct {
-	ChatID     int64
-	SubID      string
-	Name       string
-	MinMag     float64
-	Delay      float64
-	MyLocation Location
-	Radius     float64
+	ChatID   int64
+	SubID    string
+	Name     string
+	MinMag   float64
+	Delay    float64
+	Location *Location
+	Radius   float64
 }
 
 type SubscriptionUpdate struct {
-	Name       string
-	MinMag     float64
-	Delay      float64
-	MyLocation *Location
-	Radius     float64
+	Name     string
+	MinMag   float64
+	Delay    float64
+	Location *Location
+	Radius   float64
 }
 
 type Location struct {

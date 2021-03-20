@@ -23,8 +23,7 @@ EMSC Events ⚠️
 
 #### Description
 
-The bot let you subscribe to certain rules and send notifications on earthquakes
-with given parameters.
+It makes you able to receive notifications of recent earthquakes by making subscriptions configured with parameters such as magnitude, location, and observing radius.
 
 #### Commands
 

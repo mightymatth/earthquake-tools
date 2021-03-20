@@ -35,12 +35,13 @@ func (scr SubscriptionScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Mes
 
 func (scr SubscriptionScreen) text(sub *entity.Subscription) string {
 	return fmt.Sprintf(`
-<i>[<b>%s</b>] Subscription Settings</i>
+<i>Subscription Settings for</i> <b>%s</b>
+
 📶 Magnitude: ≥ %.1f
 ⏳ Delay: ≤ %.0f min
-📍 My location (lat, long): %s
+📍 Location: %s
 ⭕️ Radius: %.1f km
-`, sub.Name, sub.MinMag, sub.Delay, LocationToHTMLString(sub.MyLocation), sub.Radius)
+`, sub.Name, sub.MinMag, sub.Delay, LocationToHTMLString(sub.Location), sub.Radius)
 }
 
 func (scr SubscriptionScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
@@ -83,7 +84,11 @@ func ShowSubscription(chatID int64, subID string, bot *tgbotapi.BotAPI, s storag
 	bot.Send(msg)
 }
 
-func LocationToHTMLString(loc entity.Location) string {
-	return fmt.Sprintf("%f, %f (<a href=\"http://www.google.com/maps/place/%f,%f\">link to maps</a>)",
+func LocationToHTMLString(loc *entity.Location) string {
+	if loc == nil {
+		return "not set"
+	}
+
+	return fmt.Sprintf("<code>%f, %f</code> (<a href=\"http://www.google.com/maps/place/%f,%f\">🌍 link to maps</a>)",
 		loc.Lat, loc.Lng, loc.Lat, loc.Lng)
 }

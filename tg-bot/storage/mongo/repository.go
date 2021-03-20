@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
+	"math"
 	"os"
 	"time"
 )
@@ -139,23 +140,26 @@ func (s *Storage) GetSubscription(subHexID string) (*entity.Subscription, error)
 	}
 
 	sub := entity.Subscription{
-		ChatID: subDB.ChatID,
-		SubID:  subDB.ID.Hex(),
-		Name:   subDB.Name,
-		MinMag: subDB.MinMag,
-		Delay:  subDB.Delay,
-		MyLocation: entity.Location{
-			Lat: subDB.MyLocation.Lat,
-			Lng: subDB.MyLocation.Lng,
-		},
-		Radius: subDB.Radius,
+		ChatID:   subDB.ChatID,
+		SubID:    subDB.ID.Hex(),
+		Name:     subDB.Name,
+		MinMag:   subDB.MinMag,
+		Delay:    subDB.Delay,
+		Location: subDB.Location.toLocation(),
+		Radius:   subDB.Radius,
 	}
 
 	return &sub, nil
 }
 
 func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscription, error) {
-	subCreate := Subscription{ChatID: chatID, Name: name}
+	subCreate := Subscription{
+		ChatID: chatID,
+		Name:   name,
+		MinMag: 1.5,
+		Delay:  15,
+		Radius: 140,
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -173,15 +177,12 @@ func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscri
 	}
 
 	newSub := entity.Subscription{
-		SubID:  newSubDB.ID.String(),
-		ChatID: newSubDB.ChatID,
-		MinMag: newSubDB.MinMag,
-		Delay:  newSubDB.Delay,
-		MyLocation: entity.Location{
-			Lat: newSubDB.MyLocation.Lat,
-			Lng: newSubDB.MyLocation.Lng,
-		},
-		Radius: newSubDB.Radius,
+		SubID:    newSubDB.ID.String(),
+		ChatID:   newSubDB.ChatID,
+		MinMag:   newSubDB.MinMag,
+		Delay:    newSubDB.Delay,
+		Location: newSubDB.Location.toLocation(),
+		Radius:   newSubDB.Radius,
 	}
 
 	return &newSub, nil
@@ -195,21 +196,19 @@ func (s *Storage) UpdateSubscription(
 		return nil, err
 	}
 
-	var myLocation *Point
-
-	if subUpdate.MyLocation != nil {
-		myLocation = &Point{
-			Lat: subUpdate.MyLocation.Lat,
-			Lng: subUpdate.MyLocation.Lng,
-		}
+	subUpdateDB := SubscriptionUpdate{
+		Name:     subUpdate.Name,
+		MinMag:   subUpdate.MinMag,
+		Delay:    subUpdate.Delay,
+		Location: toPoint(subUpdate.Location),
+		Radius:   subUpdate.Radius,
 	}
 
-	subUpdateDB := SubscriptionUpdate{
-		Name:       subUpdate.Name,
-		MinMag:     subUpdate.MinMag,
-		Delay:      subUpdate.Delay,
-		MyLocation: myLocation,
-		Radius:     subUpdate.Radius,
+	if subUpdateDB.Location != nil || subUpdateDB.Radius > 0 {
+		err = setObserveArea(subID, &subUpdateDB, s)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get subscription to set observe area: %v", err)
+		}
 	}
 
 	var newSubDB Subscription
@@ -227,15 +226,12 @@ func (s *Storage) UpdateSubscription(
 	}
 
 	newSub := entity.Subscription{
-		SubID:  newSubDB.ID.String(),
-		ChatID: newSubDB.ChatID,
-		MinMag: newSubDB.MinMag,
-		Delay:  newSubDB.Delay,
-		MyLocation: entity.Location{
-			Lat: newSubDB.MyLocation.Lat,
-			Lng: newSubDB.MyLocation.Lng,
-		},
-		Radius: newSubDB.Radius,
+		SubID:    newSubDB.ID.String(),
+		ChatID:   newSubDB.ChatID,
+		MinMag:   newSubDB.MinMag,
+		Delay:    newSubDB.Delay,
+		Location: newSubDB.Location.toLocation(),
+		Radius:   newSubDB.Radius,
 	}
 
 	return &newSub, nil
@@ -278,20 +274,85 @@ func (s *Storage) GetSubscriptions(chatID int64) (subs []entity.Subscription) {
 		}
 
 		sub := entity.Subscription{
-			ChatID: subDB.ChatID,
-			SubID:  subDB.ID.Hex(),
-			Name:   subDB.Name,
-			MinMag: subDB.MinMag,
-			Delay:  subDB.Delay,
-			MyLocation: entity.Location{
-				Lat: subDB.MyLocation.Lat,
-				Lng: subDB.MyLocation.Lng,
-			},
-			Radius: subDB.Radius,
+			ChatID:   subDB.ChatID,
+			SubID:    subDB.ID.Hex(),
+			Name:     subDB.Name,
+			MinMag:   subDB.MinMag,
+			Delay:    subDB.Delay,
+			Location: subDB.Location.toLocation(),
+			Radius:   subDB.Radius,
 		}
 
 		subs = append(subs, sub)
 	}
 
 	return subs
+}
+
+func (p *Point) toLocation() *entity.Location {
+	if p == nil {
+		return nil
+	}
+
+	return &entity.Location{
+		Lat: p.Lat,
+		Lng: p.Lng,
+	}
+}
+
+func toPoint(loc *entity.Location) *Point {
+	if loc == nil {
+		return nil
+	}
+
+	return &Point{
+		Lat: loc.Lat,
+		Lng: loc.Lng,
+	}
+}
+
+func setObserveArea(subID primitive.ObjectID, sub *SubscriptionUpdate, s *Storage) error {
+	dbSubOld, err := s.GetSubscription(subID.Hex())
+	if err != nil {
+		return err
+	}
+
+	var location *Point
+	if sub.Location != nil && sub.Location != toPoint(dbSubOld.Location) {
+		location = sub.Location
+	} else if dbSubOld.Location != nil {
+		location = toPoint(dbSubOld.Location)
+	} else {
+		return nil
+	}
+
+	var radius float64
+	if sub.Radius > 0 && sub.Radius != dbSubOld.Radius {
+		radius = sub.Radius
+	} else if dbSubOld.Radius > 0 {
+		radius = dbSubOld.Radius
+	} else {
+		return nil
+	}
+
+	degToRad := math.Pi / 180
+	radToDeg := 180 / math.Pi
+	earthRadius := 6371
+	pointsTotal := 13 // used for circle approximation
+
+	latR := (radius / float64(earthRadius)) * radToDeg
+	lngR := latR / math.Cos(location.Lat*degToRad)
+
+	points := make([]PointAsArray, pointsTotal + 1, pointsTotal + 1)
+
+	for i := 0; i < pointsTotal+1; i++ {
+		theta := math.Pi * float64(i / (pointsTotal / 2))
+		ey := location.Lat + (latR * math.Sin(theta))
+		ex := location.Lng + (lngR * math.Cos(theta))
+		points[i] = Point{Lat: ey, Lng: ex}.ToArray()
+	}
+
+	sub.ObserveArea = NewObserveArea(points)
+
+	return nil
 }
