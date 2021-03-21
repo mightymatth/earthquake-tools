@@ -393,12 +393,13 @@ func setObserveArea(subID primitive.ObjectID, sub *SubscriptionUpdate, s *Storag
 
 	points := make([]PointAsArray, pointsTotal+1, pointsTotal+1)
 
-	for i := 0; i < pointsTotal+1; i++ {
+	for i := 0; i < pointsTotal; i++ {
 		theta := math.Pi * float64(i) / (float64(pointsTotal) / 2)
 		ey := location.Lat + (latR * math.Sin(theta))
 		ex := location.Lng + (lngR * math.Cos(theta))
 		points[i] = Point{Lat: ey, Lng: ex}.ToArray()
 	}
+	points[pointsTotal] = points[0]
 
 	sub.ObserveArea = NewObserveArea(points)
 
