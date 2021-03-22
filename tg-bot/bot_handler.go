@@ -58,14 +58,14 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 			return
 		}
 
-		_, err := storage.Service.CreateSubscription(s, update.Message.Chat.ID, update.Message.Text)
+		sub, err := storage.Service.CreateSubscription(s, update.Message.Chat.ID, update.Message.Text)
 		if err != nil {
 			log.Printf("cannot create subscription: %v", err)
 			return
 		}
 
 		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
-		screen.ShowSubscriptions(update.Message.Chat.ID, bot, s)
+		screen.ShowSubscription(update.Message.Chat.ID, sub.SubID, bot, s)
 	case screen.SetMagnitude:
 		mag, err := strconv.ParseFloat(update.Message.Text, 64)
 		if err != nil {

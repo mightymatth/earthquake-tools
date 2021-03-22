@@ -5,6 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
+	"log"
 )
 
 type DeleteSubscriptionScreen struct {
@@ -22,7 +23,7 @@ func NewDeleteSubscriptionScreen(subID, confirm string) DeleteSubscriptionScreen
 func (scr DeleteSubscriptionScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
 	sub, err := s.GetSubscription(scr.Params.P1)
 	if err != nil {
-		fmt.Printf("cannot get subscription: %v", err)
+		log.Printf("cannot get subscription: %v", err)
 		return
 	}
 
@@ -33,26 +34,26 @@ func (scr DeleteSubscriptionScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbota
 	case ConfirmDeleteSub:
 		err := s.DeleteSubscription(scr.Params.P1)
 		if err != nil {
-			fmt.Printf("cannot delete subscription: %v", err)
+			log.Printf("cannot delete subscription: %v", err)
 			return
 		}
 		NewSubscriptionsScreen("").TakeAction(bot, msg, s)
 	default:
-		fmt.Print("unknown delete subscription parameter")
+		log.Print("unknown delete subscription parameter")
 		return
 	}
 }
 
 func (scr DeleteSubscriptionScreen) text(sub *entity.Subscription) string {
 	return fmt.Sprintf(`
-Do you really want to delete subscription '%s'
+Do you really want to delete subscription <b>%s</b>?
 `, sub.Name)
 }
 
 func (scr DeleteSubscriptionScreen) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
-	yes := tgbotapi.NewInlineKeyboardButtonData("Yes",
+	yes := tgbotapi.NewInlineKeyboardButtonData("✅ Yes",
 		NewDeleteSubscriptionScreen(scr.Screen.Params.P1, ConfirmDeleteSub).Encode())
-	no := tgbotapi.NewInlineKeyboardButtonData("No",
+	no := tgbotapi.NewInlineKeyboardButtonData("❌ No",
 		NewSubscriptionScreen(scr.Screen.Params.P1, "").Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(

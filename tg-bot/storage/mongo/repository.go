@@ -177,7 +177,7 @@ func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscri
 	}
 
 	newSub := entity.Subscription{
-		SubID:    newSubDB.ID.String(),
+		SubID:    newSubDB.ID.Hex(),
 		ChatID:   newSubDB.ChatID,
 		MinMag:   newSubDB.MinMag,
 		Delay:    newSubDB.Delay,
@@ -226,7 +226,7 @@ func (s *Storage) UpdateSubscription(
 	}
 
 	newSub := entity.Subscription{
-		SubID:    newSubDB.ID.String(),
+		SubID:    newSubDB.ID.Hex(),
 		ChatID:   newSubDB.ChatID,
 		MinMag:   newSubDB.MinMag,
 		Delay:    newSubDB.Delay,

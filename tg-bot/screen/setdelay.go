@@ -1,7 +1,6 @@
 package screen
 
 import (
-	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
@@ -27,7 +26,7 @@ func (scr SetDelayScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message
 
 	sub, err := s.GetSubscription(scr.Params.P1)
 	if err != nil {
-		fmt.Printf("cannot get subscription: %v", err)
+		log.Printf("cannot get subscription: %v", err)
 		return
 	}
 
@@ -60,7 +59,7 @@ func (scr SetDelayScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.Inli
 func ShowSetDelay(chatID int64, subID string, bot *tgbotapi.BotAPI, s storage.Service) {
 	sub, err := s.GetSubscription(subID)
 	if err != nil {
-		fmt.Printf("cannot get subscription: %v", err)
+		log.Printf("cannot get subscription: %v", err)
 		return
 	}
 

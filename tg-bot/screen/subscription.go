@@ -5,6 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
+	"log"
 )
 
 type SubscriptionScreen struct {
@@ -25,7 +26,7 @@ func (scr SubscriptionScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Mes
 
 	sub, err := s.GetSubscription(scr.Params.P1)
 	if err != nil {
-		fmt.Printf("cannot get subscription: %v", err)
+		log.Printf("cannot get subscription: %v", err)
 		return
 	}
 
@@ -65,7 +66,7 @@ func (scr SubscriptionScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.
 func ShowSubscription(chatID int64, subID string, bot *tgbotapi.BotAPI, s storage.Service) {
 	sub, err := s.GetSubscription(subID)
 	if err != nil {
-		fmt.Printf("cannot get subscription: %v", err)
+		log.Printf("cannot get subscription: %v", err)
 		return
 	}
 
@@ -89,6 +90,6 @@ func LocationToHTMLString(loc *entity.Location) string {
 		return "not set"
 	}
 
-	return fmt.Sprintf("<code>%f, %f</code> (<a href=\"http://www.google.com/maps/place/%f,%f\">🌍 link to maps</a>)",
+	return fmt.Sprintf("<code>%f,%f</code> (<a href=\"http://www.google.com/maps/place/%f,%f\">maps 🌍</a>)",
 		loc.Lat, loc.Lng, loc.Lat, loc.Lng)
 }
