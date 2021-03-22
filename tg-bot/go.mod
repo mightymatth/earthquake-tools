@@ -1,6 +1,6 @@
 module github.com/mightymatth/earthquake-tools/tg-bot
 
-go 1.15
+go 1.16
 
 require (
 	github.com/dustin/go-humanize v1.0.0

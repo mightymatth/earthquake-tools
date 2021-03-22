@@ -1,11 +1,24 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"time"
 )
+
+//go:embed tzdb
+var _ embed.FS
+
+func init() {
+	err := os.Setenv("ZONEINFO", "tzdb")
+	if err != nil {
+		log.Panicf("cannot set ZONEINFO env variable: %v", err)
+	}
+}
 
 func LocationTime(timeUTC time.Time, lat, lon float64) (*time.Time, error) {
 	resp, err := http.Get(fmt.Sprintf(
