@@ -107,7 +107,7 @@ func EarthquakeEventServer(bot *tgbotapi.BotAPI, s storage.Service) func(http.Re
 func getLocationTime(timeUTC time.Time, lat, lon float64) string {
 	localTime, err := LocationTime(timeUTC, lat, lon)
 	if err != nil {
-		fmt.Printf("cannot get location time: %v", err)
+		log.Printf("cannot get location time: %v", err)
 		return "unknown"
 	}
 
