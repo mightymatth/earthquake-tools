@@ -36,7 +36,6 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		return
 	}
 
-
 	chatState := storage.Service.GetChatState(s, update.Message.Chat.ID)
 
 	if chatState.AwaitInput == "" {
