@@ -48,7 +48,9 @@ func getLocationTime(timeUTC time.Time, lat, lon float64) string {
 }
 
 func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) error {
-	bot.Debug = true
+	if getEnv("BOT_ENV", "dev") != "prod" {
+		bot.Debug = true
+	}
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
