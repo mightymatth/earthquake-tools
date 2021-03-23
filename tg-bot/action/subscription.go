@@ -1,4 +1,4 @@
-package screen
+package action
 
 import (
 	"fmt"
@@ -8,33 +8,33 @@ import (
 	"log"
 )
 
-type SubscriptionScreen struct {
-	Screen
+type SubscriptionAction struct {
+	Action
 }
 
 const Sub Cmd = "SUB"
 
-func NewSubscriptionScreen(subID string, reset ResetInputType) SubscriptionScreen {
-	return SubscriptionScreen{Screen{
+func NewSubscription(subID string, reset ResetInputType) SubscriptionAction {
+	return SubscriptionAction{Action{
 		Cmd:    Sub,
 		Params: Params{P1: subID, P2: string(reset)},
 	}}
 }
 
-func (scr SubscriptionScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
-	_ = ResetAwaitInput(ResetInputType(scr.Params.P2), msg.Chat.ID, bot, s)
+func (a SubscriptionAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
+	_ = ResetAwaitInput(ResetInputType(a.Params.P2), msg.Chat.ID, s)
 
-	sub, err := s.GetSubscription(scr.Params.P1)
+	sub, err := s.GetSubscription(a.Params.P1)
 	if err != nil {
 		log.Printf("cannot get subscription: %v", err)
 		return
 	}
 
-	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(sub), scr.inlineButtons(sub))
+	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, a.text(sub), a.inlineButtons(sub))
 	bot.Send(message)
 }
 
-func (scr SubscriptionScreen) text(sub *entity.Subscription) string {
+func (a SubscriptionAction) text(sub *entity.Subscription) string {
 	return fmt.Sprintf(`
 <i>Subscription Settings for</i> <b>%s</b>
 
@@ -45,15 +45,15 @@ func (scr SubscriptionScreen) text(sub *entity.Subscription) string {
 `, sub.Name, sub.MinMag, sub.Delay, LocationToHTMLString(sub.Location), sub.Radius)
 }
 
-func (scr SubscriptionScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
-	magnitude := tgbotapi.NewInlineKeyboardButtonData("📶 Magnitude", NewSetMagnitudeScreen(sub.SubID).Encode())
-	delay := tgbotapi.NewInlineKeyboardButtonData("⏳ Delay", NewSetDelayScreen(sub.SubID).Encode())
-	location := tgbotapi.NewInlineKeyboardButtonData("📍️ Location", NewSetLocationScreen(sub.SubID).Encode())
-	radius := tgbotapi.NewInlineKeyboardButtonData("⭕️ Radius", NewSetRadiusScreen(sub.SubID).Encode())
+func (a SubscriptionAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
+	magnitude := tgbotapi.NewInlineKeyboardButtonData("📶 Magnitude", NewSetMagnitudeAction(sub.SubID).Encode())
+	delay := tgbotapi.NewInlineKeyboardButtonData("⏳ Delay", NewSetDelayAction(sub.SubID).Encode())
+	location := tgbotapi.NewInlineKeyboardButtonData("📍️ Location", NewSetLocationAction(sub.SubID).Encode())
+	radius := tgbotapi.NewInlineKeyboardButtonData("⭕️ Radius", NewSetRadiusAction(sub.SubID).Encode())
 	home := tgbotapi.NewInlineKeyboardButtonData("« Subscriptions",
-		NewSubscriptionsScreen("").Encode())
+		NewSubscriptionsAction("").Encode())
 	deleteSub := tgbotapi.NewInlineKeyboardButtonData("🗑 Delete",
-		NewDeleteSubscriptionScreen(scr.Params.P1, "").Encode())
+		NewDeleteSubscriptionAction(a.Params.P1, "").Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(magnitude, delay),
@@ -70,19 +70,19 @@ func ShowSubscription(chatID int64, subID string, bot *tgbotapi.BotAPI, s storag
 		return
 	}
 
-	subScreen := NewSubscriptionScreen(subID, "")
+	subAction := NewSubscription(subID, "")
 	msg := tgbotapi.MessageConfig{
 		BaseChat: tgbotapi.BaseChat{
 			ChatID:      chatID,
-			ReplyMarkup: subScreen.inlineButtons(sub),
+			ReplyMarkup: subAction.inlineButtons(sub),
 		},
-		Text: subScreen.text(sub),
+		Text: subAction.text(sub),
 
 		ParseMode:             tgbotapi.ModeHTML,
 		DisableWebPagePreview: true,
 	}
 
-	bot.Send(msg)
+	_, _ = bot.Send(msg)
 }
 
 func LocationToHTMLString(loc *entity.Location) string {

@@ -1,4 +1,4 @@
-package screen
+package action
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -7,48 +7,50 @@ import (
 	"log"
 )
 
-type SetDelayScreen struct {
-	Screen
+type SetDelayAction struct {
+	Action
 }
 
 const SetDelay Cmd = "SET_DELAY"
 
-func NewSetDelayScreen(subID string) SetDelayScreen {
-	return SetDelayScreen{Screen{Cmd: SetDelay, Params: Params{P1: subID}}}
+func NewSetDelayAction(subID string) SetDelayAction {
+	return SetDelayAction{Action{Cmd: SetDelay, Params: Params{P1: subID}}}
 }
 
-func (scr SetDelayScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
-	err := s.SetAwaitUserInput(msg.Chat.ID, scr.Encode())
+func (a SetDelayAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
+	err := s.SetAwaitUserInput(msg.Chat.ID, a.Encode())
 	if err != nil {
 		log.Printf("cannot set chat state: %v", err)
 		return
 	}
 
-	sub, err := s.GetSubscription(scr.Params.P1)
+	sub, err := s.GetSubscription(a.Params.P1)
 	if err != nil {
 		log.Printf("cannot get subscription: %v", err)
 		return
 	}
 
-	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(), scr.inlineButtons(sub))
+	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, a.text(), a.inlineButtons(sub))
 	bot.Send(message)
 }
 
-func (scr SetDelayScreen) text() string {
+func (a SetDelayAction) text() string {
 	return `
-<b>Delay</b> is a time period between earthquake time and time when the report is received.
-Enter how many minutes you will tolerate.
+<b>Delay</b> is a time period between the earthquake occasion and the moment when the report is received. 
+It is expected behavior as data may arrive from various sources.
+Enter how many <u>minutes</u> you will tolerate.
+
 e.g.: <code>2</code>, <code>60</code>
 `
 }
 
-func (scr SetDelayScreen) WrongInput() string {
+func (a SetDelayAction) WrongInput() string {
 	return "Wrong input. Integer or decimal number expected."
 }
 
-func (scr SetDelayScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
+func (a SetDelayAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
-		NewSubscriptionScreen(sub.SubID, ResetInput).Encode())
+		NewSubscription(sub.SubID, ResetInput).Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(cancel),
@@ -63,17 +65,17 @@ func ShowSetDelay(chatID int64, subID string, bot *tgbotapi.BotAPI, s storage.Se
 		return
 	}
 
-	setDelayScreen := NewSetDelayScreen(subID)
+	setDelayAction := NewSetDelayAction(subID)
 	msg := tgbotapi.MessageConfig{
 		BaseChat: tgbotapi.BaseChat{
 			ChatID:      chatID,
-			ReplyMarkup: setDelayScreen.inlineButtons(sub),
+			ReplyMarkup: setDelayAction.inlineButtons(sub),
 		},
-		Text: setDelayScreen.text(),
+		Text: setDelayAction.text(),
 
 		ParseMode:             tgbotapi.ModeHTML,
 		DisableWebPagePreview: true,
 	}
 
-	bot.Send(msg)
+	_, _ = bot.Send(msg)
 }

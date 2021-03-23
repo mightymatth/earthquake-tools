@@ -1,4 +1,4 @@
-package screen
+package action
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -7,34 +7,34 @@ import (
 	"log"
 )
 
-type SetRadiusScreen struct {
-	Screen
+type SetRadiusAction struct {
+	Action
 }
 
 const SetRadius Cmd = "SET_RADIUS"
 
-func NewSetRadiusScreen(subID string) SetRadiusScreen {
-	return SetRadiusScreen{Screen{Cmd: SetRadius, Params: Params{P1: subID}}}
+func NewSetRadiusAction(subID string) SetRadiusAction {
+	return SetRadiusAction{Action{Cmd: SetRadius, Params: Params{P1: subID}}}
 }
 
-func (scr SetRadiusScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
-	err := s.SetAwaitUserInput(msg.Chat.ID, scr.Encode())
+func (a SetRadiusAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
+	err := s.SetAwaitUserInput(msg.Chat.ID, a.Encode())
 	if err != nil {
 		log.Printf("cannot set chat state: %v", err)
 		return
 	}
 
-	sub, err := s.GetSubscription(scr.Params.P1)
+	sub, err := s.GetSubscription(a.Params.P1)
 	if err != nil {
 		log.Printf("cannot get subscription: %v", err)
 		return
 	}
 
-	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(), scr.inlineButtons(sub))
+	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, a.text(), a.inlineButtons(sub))
 	bot.Send(message)
 }
 
-func (scr SetRadiusScreen) text() string {
+func (a SetRadiusAction) text() string {
 	return `
 Enter maximum earthquake location radius to receive an alert.
 The unit is kilometer (km).
@@ -42,13 +42,13 @@ e.g.: <code>100.5</code>, <code>350</code>
 `
 }
 
-func (scr SetRadiusScreen) WrongInput() string {
+func (a SetRadiusAction) WrongInput() string {
 	return "Wrong input. Integer or decimal number expected."
 }
 
-func (scr SetRadiusScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
+func (a SetRadiusAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
-		NewSubscriptionScreen(sub.SubID, ResetInput).Encode())
+		NewSubscription(sub.SubID, ResetInput).Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(cancel),
@@ -63,17 +63,17 @@ func ShowSetRadius(chatID int64, subID string, bot *tgbotapi.BotAPI, s storage.S
 		return
 	}
 
-	setMagScreen := NewSetMagnitudeScreen(subID)
+	setRadiusAction := NewSetRadiusAction(subID)
 	msg := tgbotapi.MessageConfig{
 		BaseChat: tgbotapi.BaseChat{
 			ChatID:      chatID,
-			ReplyMarkup: setMagScreen.inlineButtons(sub),
+			ReplyMarkup: setRadiusAction.inlineButtons(sub),
 		},
-		Text: setMagScreen.text(),
+		Text: setRadiusAction.text(),
 
 		ParseMode:             tgbotapi.ModeHTML,
 		DisableWebPagePreview: true,
 	}
 
-	bot.Send(msg)
+	_, _ = bot.Send(msg)
 }
