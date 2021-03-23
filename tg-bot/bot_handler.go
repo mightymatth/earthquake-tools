@@ -2,8 +2,8 @@ package main
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mightymatth/earthquake-tools/tg-bot/action"
 	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
-	"github.com/mightymatth/earthquake-tools/tg-bot/screen"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 	"log"
 	"strconv"
@@ -11,13 +11,13 @@ import (
 
 func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service) {
 	if update.CallbackQuery != nil {
-		scr, err := screen.New(update.CallbackQuery.Data)
+		a, err := action.New(update.CallbackQuery.Data)
 		if err != nil {
-			log.Printf("cannot create screen: %s", err)
+			log.Printf("cannot perform action: %s", err)
 			return
 		}
 
-		scr.TakeAction(bot, update.CallbackQuery.Message, s)
+		a.Perform(bot, update.CallbackQuery.Message, s)
 
 		_, _ = bot.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: update.CallbackQuery.ID})
 		return
@@ -29,32 +29,34 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 
 	switch update.Message.Text {
 	case "/start":
-		screen.ShowHome(bot, update.Message.Chat.ID)
+		action.ShowHome(bot, update.Message.Chat.ID)
 		return
 	case "/list":
-		screen.ShowSubscriptions(update.Message.Chat.ID, bot, s)
+		action.ShowSubscriptions(update.Message.Chat.ID, bot, s)
 		return
 	}
 
 	chatState := storage.Service.GetChatState(s, update.Message.Chat.ID)
 
 	if chatState.AwaitInput == "" {
-		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
+		action.ShowUnknownCommand(bot, update.Message.Chat.ID)
 		return
 	}
 
-	screener, err := screen.New(chatState.AwaitInput)
+	actionable, err := action.New(chatState.AwaitInput)
 	if err != nil {
-		log.Printf("cannot create screen: %s", err)
+		log.Printf("cannot perform action: %s", err)
 		return
 	}
 
-	scr := screener.Type()
-	switch scr.Cmd {
-	case screen.CreateSub:
+	a := actionable.ToAction()
+	switch a.Cmd {
+	case action.CreateSub:
 		if update.Message.Text == "" {
-			// TODO: show user a message should be text.
-			// This happens in scenario when a user sends sticker or something else...
+			createSubAction := action.CreateSubscriptionAction{Action: a}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, createSubAction.WrongInput())
+			_, _ = bot.Send(msg)
+			action.ShowCreateSubscription(update.Message.Chat.ID, bot)
 			return
 		}
 
@@ -64,54 +66,54 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 			return
 		}
 
-		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
-		screen.ShowSubscription(update.Message.Chat.ID, sub.SubID, bot, s)
-	case screen.SetMagnitude:
+		_ = action.ResetAwaitInput(action.ResetInput, update.Message.Chat.ID, s)
+		action.ShowSubscription(update.Message.Chat.ID, sub.SubID, bot, s)
+	case action.SetMagnitude:
 		mag, err := strconv.ParseFloat(update.Message.Text, 64)
 		if err != nil {
-			setMagScreen := screen.SetMagnitudeScreen{Screen: scr}
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setMagScreen.WrongInput())
+			setMagAction := action.SetMagnitudeAction{Action: a}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setMagAction.WrongInput())
 			_, _ = bot.Send(msg)
-			screen.ShowSetMagnitude(update.Message.Chat.ID, setMagScreen.Params.P1, bot, s)
+			action.ShowSetMagnitude(update.Message.Chat.ID, setMagAction.Params.P1, bot, s)
 			return
 		}
 
 		magUpdate := entity.SubscriptionUpdate{MinMag: mag}
-		_, err = storage.Service.UpdateSubscription(s, scr.Params.P1, &magUpdate)
+		_, err = storage.Service.UpdateSubscription(s, a.Params.P1, &magUpdate)
 		if err != nil {
 			log.Printf("cannot set magnitude to subscription: %v", err)
 			return
 		}
 
-		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
-		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
-	case screen.SetDelay:
+		_ = action.ResetAwaitInput(action.ResetInput, update.Message.Chat.ID, s)
+		action.ShowSubscription(update.Message.Chat.ID, a.Params.P1, bot, s)
+	case action.SetDelay:
 		delay, err := strconv.ParseFloat(update.Message.Text, 64)
 		if err != nil {
-			setDelayScreen := screen.SetDelayScreen{Screen: scr}
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setDelayScreen.WrongInput())
+			setDelayAction := action.SetDelayAction{Action: a}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setDelayAction.WrongInput())
 			_, _ = bot.Send(msg)
-			screen.ShowSetDelay(update.Message.Chat.ID, setDelayScreen.Params.P1, bot, s)
+			action.ShowSetDelay(update.Message.Chat.ID, setDelayAction.Params.P1, bot, s)
 			return
 		}
 
 		delayUpdate := entity.SubscriptionUpdate{Delay: delay}
-		_, err = storage.Service.UpdateSubscription(s, scr.Params.P1, &delayUpdate)
+		_, err = storage.Service.UpdateSubscription(s, a.Params.P1, &delayUpdate)
 		if err != nil {
 			log.Printf("cannot set delay to subscription: %v", err)
 			return
 		}
 
-		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
-		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
-	case screen.SetLocation:
+		_ = action.ResetAwaitInput(action.ResetInput, update.Message.Chat.ID, s)
+		action.ShowSubscription(update.Message.Chat.ID, a.Params.P1, bot, s)
+	case action.SetLocation:
 		inputLoc := update.Message.Location
 
 		if inputLoc == nil {
-			setLocationScreen := screen.SetLocationScreen{Screen: scr}
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setLocationScreen.WrongInput())
+			setLocationAction := action.SetLocationAction{Action: a}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setLocationAction.WrongInput())
 			_, _ = bot.Send(msg)
-			screen.ShowSetLocation(update.Message.Chat.ID, setLocationScreen.Params.P1, bot, s)
+			action.ShowSetLocation(update.Message.Chat.ID, setLocationAction.Params.P1, bot, s)
 			return
 		}
 
@@ -121,34 +123,34 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		}
 
 		locationUpdate := entity.SubscriptionUpdate{Location: &location}
-		_, err = storage.Service.UpdateSubscription(s, scr.Params.P1, &locationUpdate)
+		_, err = storage.Service.UpdateSubscription(s, a.Params.P1, &locationUpdate)
 		if err != nil {
 			log.Printf("cannot set location to subscription: %v", err)
 			return
 		}
 
-		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
-		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
-	case screen.SetRadius:
+		_ = action.ResetAwaitInput(action.ResetInput, update.Message.Chat.ID, s)
+		action.ShowSubscription(update.Message.Chat.ID, a.Params.P1, bot, s)
+	case action.SetRadius:
 		radius, err := strconv.ParseFloat(update.Message.Text, 64)
 		if err != nil {
-			setRadiusScreen := screen.SetRadiusScreen{Screen: scr}
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setRadiusScreen.WrongInput())
+			setRadiusAction := action.SetRadiusAction{Action: a}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, setRadiusAction.WrongInput())
 			_, _ = bot.Send(msg)
-			screen.ShowSetRadius(update.Message.Chat.ID, setRadiusScreen.Params.P1, bot, s)
+			action.ShowSetRadius(update.Message.Chat.ID, setRadiusAction.Params.P1, bot, s)
 			return
 		}
 
 		radiusUpdate := entity.SubscriptionUpdate{Radius: radius}
-		_, err = storage.Service.UpdateSubscription(s, scr.Params.P1, &radiusUpdate)
+		_, err = storage.Service.UpdateSubscription(s, a.Params.P1, &radiusUpdate)
 		if err != nil {
 			log.Printf("cannot set radius to subscription: %v", err)
 			return
 		}
 
-		_ = screen.ResetAwaitInput(screen.ResetInput, update.Message.Chat.ID, bot, s)
-		screen.ShowSubscription(update.Message.Chat.ID, scr.Params.P1, bot, s)
+		_ = action.ResetAwaitInput(action.ResetInput, update.Message.Chat.ID, s)
+		action.ShowSubscription(update.Message.Chat.ID, a.Params.P1, bot, s)
 	default:
-		screen.ShowUnknownCommand(bot, update.Message.Chat.ID)
+		action.ShowUnknownCommand(bot, update.Message.Chat.ID)
 	}
 }

@@ -1,4 +1,4 @@
-package screen
+package action
 
 import (
 	"fmt"
@@ -8,8 +8,7 @@ import (
 	"strings"
 )
 
-type Screen struct {
-	Screener
+type Action struct {
 	Cmd    Cmd
 	Params Params
 }
@@ -25,29 +24,29 @@ type ResetInputType string
 
 const ResetInput ResetInputType = "+"
 
-type Screener interface {
-	TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service)
-	Type() Screen
+type Actionable interface {
+	Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service)
+	ToAction() Action
 }
 
-func New(data string) (Screener, error) {
+func New(data string) (Actionable, error) {
 	s, err := Decode(data)
 	if err != nil {
-		return nil, fmt.Errorf("unknown screen '%s'", data)
+		return nil, fmt.Errorf("unknown action '%s'", data)
 	}
 
 	return s, nil
 }
 
-func (s Screen) Type() Screen {
-	return s
+func (a Action) ToAction() Action {
+	return a
 }
 
-func (s Screen) Encode() string {
-	return fmt.Sprintf("%s:%s:%s", s.Cmd, s.Params.P1, s.Params.P2)
+func (a Action) Encode() string {
+	return fmt.Sprintf("%s:%s:%s", a.Cmd, a.Params.P1, a.Params.P2)
 }
 
-func Decode(data string) (Screener, error) {
+func Decode(data string) (Actionable, error) {
 	parts := strings.Split(data, ":")
 	if len(parts) != 3 {
 		return nil, errors.Errorf("empty or data format: '%v'", data)
@@ -57,29 +56,29 @@ func Decode(data string) (Screener, error) {
 
 	switch Cmd(cmd) {
 	case Home:
-		return NewHomeScreen(), nil
+		return NewHomeAction(), nil
 	case Subs:
-		return NewSubscriptionsScreen(ResetInputType(p1)), nil
+		return NewSubscriptionsAction(ResetInputType(p1)), nil
 	case Sub:
-		return NewSubscriptionScreen(p1, ResetInputType(p2)), nil
+		return NewSubscription(p1, ResetInputType(p2)), nil
 	case CreateSub:
-		return NewCreateSubscriptionScreen(), nil
+		return NewCreateSubscriptionAction(), nil
 	case DeleteSub:
-		return NewDeleteSubscriptionScreen(p1, p2), nil
+		return NewDeleteSubscriptionAction(p1, p2), nil
 	case SetMagnitude:
-		return NewSetMagnitudeScreen(p1), nil
+		return NewSetMagnitudeAction(p1), nil
 	case SetDelay:
-		return NewSetDelayScreen(p1), nil
+		return NewSetDelayAction(p1), nil
 	case SetLocation:
-		return NewSetLocationScreen(p1), nil
+		return NewSetLocationAction(p1), nil
 	case SetRadius:
-		return NewSetRadiusScreen(p1), nil
+		return NewSetRadiusAction(p1), nil
 	default:
-		return nil, errors.Errorf("screen '%s' doesnt exist", cmd)
+		return nil, errors.Errorf("action with command '%s' doesn't exist", cmd)
 	}
 }
 
-func ResetAwaitInput(resetInput ResetInputType, chatID int64, bot *tgbotapi.BotAPI, s storage.Service) error {
+func ResetAwaitInput(resetInput ResetInputType, chatID int64, s storage.Service) error {
 	switch resetInput {
 	case ResetInput:
 		err := s.SetAwaitUserInput(chatID, "")

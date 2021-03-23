@@ -1,4 +1,4 @@
-package screen
+package action
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -7,47 +7,47 @@ import (
 	"log"
 )
 
-type SetMagnitudeScreen struct {
-	Screen
+type SetMagnitudeAction struct {
+	Action
 }
 
 const SetMagnitude Cmd = "SET_MAG"
 
-func NewSetMagnitudeScreen(subID string) SetMagnitudeScreen {
-	return SetMagnitudeScreen{Screen{Cmd: SetMagnitude, Params: Params{P1: subID}}}
+func NewSetMagnitudeAction(subID string) SetMagnitudeAction {
+	return SetMagnitudeAction{Action{Cmd: SetMagnitude, Params: Params{P1: subID}}}
 }
 
-func (scr SetMagnitudeScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
-	err := s.SetAwaitUserInput(msg.Chat.ID, scr.Encode())
+func (a SetMagnitudeAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
+	err := s.SetAwaitUserInput(msg.Chat.ID, a.Encode())
 	if err != nil {
 		log.Printf("cannot set chat state: %v", err)
 		return
 	}
 
-	sub, err := s.GetSubscription(scr.Params.P1)
+	sub, err := s.GetSubscription(a.Params.P1)
 	if err != nil {
 		log.Printf("cannot get subscription: %v", err)
 		return
 	}
 
-	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(), scr.inlineButtons(sub))
+	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, a.text(), a.inlineButtons(sub))
 	bot.Send(message)
 }
 
-func (scr SetMagnitudeScreen) text() string {
+func (a SetMagnitudeAction) text() string {
 	return `
 Enter minimum magnitude to receive an alert.
 e.g.: <code>4.3</code>, <code>5</code>
 `
 }
 
-func (scr SetMagnitudeScreen) WrongInput() string {
+func (a SetMagnitudeAction) WrongInput() string {
 	return "Wrong input. Integer or decimal number expected."
 }
 
-func (scr SetMagnitudeScreen) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
+func (a SetMagnitudeAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
-		NewSubscriptionScreen(sub.SubID, ResetInput).Encode())
+		NewSubscription(sub.SubID, ResetInput).Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(cancel),
@@ -62,17 +62,17 @@ func ShowSetMagnitude(chatID int64, subID string, bot *tgbotapi.BotAPI, s storag
 		return
 	}
 
-	setMagScreen := NewSetMagnitudeScreen(subID)
+	setMagAction := NewSetMagnitudeAction(subID)
 	msg := tgbotapi.MessageConfig{
 		BaseChat: tgbotapi.BaseChat{
 			ChatID:      chatID,
-			ReplyMarkup: setMagScreen.inlineButtons(sub),
+			ReplyMarkup: setMagAction.inlineButtons(sub),
 		},
-		Text: setMagScreen.text(),
+		Text: setMagAction.text(),
 
 		ParseMode:             tgbotapi.ModeHTML,
 		DisableWebPagePreview: true,
 	}
 
-	bot.Send(msg)
+	_, _ = bot.Send(msg)
 }
