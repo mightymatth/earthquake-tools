@@ -17,7 +17,7 @@ func NewHomeScreen() HomeScreen {
 
 func (scr HomeScreen) TakeAction(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service) {
 	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, scr.text(), scr.inlineButtons())
-	bot.Send(message)
+	_, _ = bot.Send(message)
 }
 
 func (scr HomeScreen) text() string {

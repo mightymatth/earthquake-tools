@@ -9,7 +9,6 @@ import (
 )
 
 type Screen struct {
-	Screener
 	Cmd    Cmd
 	Params Params
 }
