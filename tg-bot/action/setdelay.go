@@ -38,6 +38,7 @@ func (a SetDelayAction) text() string {
 	return `
 <b>Delay</b> is a time period between the earthquake occasion and the moment when the report is received. 
 It is expected behavior as data may arrive from various sources.
+
 Enter how many <u>minutes</u> you will tolerate.
 
 e.g.: <code>2</code>, <code>60</code>
