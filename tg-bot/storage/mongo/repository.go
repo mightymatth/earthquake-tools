@@ -33,7 +33,7 @@ type Storage struct {
 	subscriptions *mongo.Collection
 }
 
-func NewStorage(uri string) (*Storage, error) {
+func NewStorage(uri, namespace string) (*Storage, error) {
 	var mongoURI string
 	if uri != "" {
 		mongoURI = uri
@@ -59,10 +59,14 @@ func NewStorage(uri string) (*Storage, error) {
 	}
 	log.Printf("[mongo] Successfully connected!")
 
+	if namespace != "" {
+		log.Printf("[mongo] Namespace set to: '%s'", namespace)
+	}
+
 	s.Client = client
-	s.database = s.Client.Database(databaseName)
-	s.chatStates = s.database.Collection(chatStateCollection)
-	s.subscriptions = s.database.Collection(subscriptionCollection)
+	s.database = s.Client.Database(namespaced(namespace, databaseName))
+	s.chatStates = s.database.Collection(namespaced(namespace, chatStateCollection))
+	s.subscriptions = s.database.Collection(namespaced(namespace, subscriptionCollection))
 
 	return s, nil
 }
@@ -404,4 +408,12 @@ func setObserveArea(subID primitive.ObjectID, sub *SubscriptionUpdate, s *Storag
 	sub.ObserveArea = NewObserveArea(points)
 
 	return nil
+}
+
+func namespaced(namespace, text string) string {
+	if namespace == "" {
+		return text
+	}
+
+	return fmt.Sprintf("%s-%s", namespace, text)
 }

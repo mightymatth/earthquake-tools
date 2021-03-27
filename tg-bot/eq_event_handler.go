@@ -15,7 +15,7 @@ func EqEventHandler(bot *tgbotapi.BotAPI, s storage.Service) func(http.ResponseW
 	return func(w http.ResponseWriter, r *http.Request) {
 		event, err := ParseEvent(r.Body)
 		if err != nil {
-			log.Printf("process event: %v\n", err)
+			log.Printf("processing event failed: %v", err)
 		}
 
 		if event.Action != "create" {
@@ -69,7 +69,7 @@ func EqEventHandler(bot *tgbotapi.BotAPI, s storage.Service) func(http.ResponseW
 			ParseMode:             tgbotapi.ModeHTML,
 			DisableWebPagePreview: true,
 		}
-		msg.ReplyMarkup = EventButtons(event)
+		msg.ReplyMarkup = EventButtons(*event)
 
 		for _, chatID := range chatIDs {
 			msg.BaseChat.ChatID = chatID
@@ -92,6 +92,16 @@ func EventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(detailsURL),
 		tgbotapi.NewInlineKeyboardRow(mapsURL),
 	)
+}
+
+func getLocationTime(timeUTC time.Time, lat, lon float64) string {
+	localTime, err := LocationTime(timeUTC, lat, lon)
+	if err != nil {
+		log.Printf("cannot get location time: %v", err)
+		return "unknown"
+	}
+
+	return localTime.Format("Mon, 2 Jan 2006 15:04:05 MST")
 }
 
 func SourceLinkHTML(sourceType, ID string) string {
