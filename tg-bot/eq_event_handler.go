@@ -36,49 +36,54 @@ func EqEventHandler(bot *tgbotapi.BotAPI, s storage.Service) func(http.ResponseW
 			log.Printf("cannot get event subscribers: %v\n", err)
 		}
 
-		if len(chatIDs) < 1 {
+		if len(chatIDs) == 0 {
 			return
 		}
 
-		text := fmt.Sprintf(
-			`
-📶 Magnitude: <b>%.1f</b> %s
-🔻 Depth: %.0f km
-📍 Location: %s
-⏳ Relative time: %s
-⏱ UTC Time: <code>%s</code>
-⏰ Local Time: <code>%s</code>
-🏣 Source/ID: %s
-			`,
-			event.Data.Properties.Mag,
-			event.Data.Properties.MagType,
-			event.Data.Properties.Depth,
-			event.Data.Properties.FlynnRegion,
-			humanize.RelTime(event.Data.Properties.Time, time.Now(), "ago", "later"),
-			event.Data.Properties.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
-			getLocationTime(
-				event.Data.Properties.Time,
-				event.Data.Properties.Lat,
-				event.Data.Properties.Lon,
-			),
-			SourceLinkHTML(event.Data.Properties.SourceCatalog, event.Data.Properties.SourceID),
-		)
+		eventReport := eventReport{event, time.Now()}
 
-		msg := tgbotapi.MessageConfig{
-			Text:                  text,
-			ParseMode:             tgbotapi.ModeHTML,
-			DisableWebPagePreview: true,
-		}
-		msg.ReplyMarkup = EventButtons(*event)
-
-		for _, chatID := range chatIDs {
-			msg.BaseChat.ChatID = chatID
-			_, _ = bot.Send(msg)
-		}
+		broadcast(eventReport, chatIDs, bot)
 	}
 }
 
-func EventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
+func broadcast(eventReport eventReport, chatIDs []int64, bot *tgbotapi.BotAPI) {
+	msg := tgbotapi.MessageConfig{
+		Text:                  eventReport.String(),
+		ParseMode:             tgbotapi.ModeHTML,
+		DisableWebPagePreview: true,
+	}
+	msg.ReplyMarkup = eventButtons(eventReport.EarthquakeEvent)
+
+	// sleepPeriod limits the rate of sending messages. Current Telegram limit
+	// is 30 messages per second, so sleepPeriod (which is equal to 1/rate) should be
+	// somewhat higher than 50 ms keep handing user interactions smoothly.
+	sleepPeriod := 50 * time.Millisecond
+	retryAttempts := 3
+
+	for _, chatID := range chatIDs {
+		msg.BaseChat.ChatID = chatID
+
+		for i := 1; i <= retryAttempts; i++ {
+			_, err := bot.Send(msg)
+
+			if err != nil {
+				if i == retryAttempts {
+					log.Printf("error sending event after %d retr{y,ies}: %v", retryAttempts, err)
+					break
+				}
+				time.Sleep(sleepPeriod)
+
+				continue
+			}
+
+			break
+		}
+
+		time.Sleep(sleepPeriod)
+	}
+}
+
+func eventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
 	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details & Updates",
 		fmt.Sprintf("https://www.seismicportal.eu/eventdetails.html?unid=%s", event.Data.ID),
 	)
@@ -104,7 +109,7 @@ func getLocationTime(timeUTC time.Time, lat, lon float64) string {
 	return localTime.Format("Mon, 2 Jan 2006 15:04:05 MST")
 }
 
-func SourceLinkHTML(sourceType, ID string) string {
+func sourceLinkHTML(sourceType, ID string) string {
 	switch SourceType(sourceType) {
 	case emsc:
 		return fmt.Sprintf(
@@ -120,3 +125,34 @@ type SourceType string
 const (
 	emsc SourceType = "EMSC-RTS"
 )
+
+type eventReport struct {
+	EarthquakeEvent
+	TimeNow time.Time
+}
+
+func (e eventReport) String() string {
+	return fmt.Sprintf(
+		`
+📶 Magnitude: <b>%.1f</b> %s
+🔻 Depth: %.0f km
+📍 Location: %s
+⏳ Relative time: %s
+⏱ UTC Time: <code>%s</code>
+⏰ Local Time: <code>%s</code>
+🏣 Source/ID: %s
+			`,
+		e.Data.Properties.Mag,
+		e.Data.Properties.MagType,
+		e.Data.Properties.Depth,
+		e.Data.Properties.FlynnRegion,
+		humanize.RelTime(e.Data.Properties.Time, e.TimeNow, "ago", "later"),
+		e.Data.Properties.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
+		getLocationTime(
+			e.Data.Properties.Time,
+			e.Data.Properties.Lat,
+			e.Data.Properties.Lon,
+		),
+		sourceLinkHTML(e.Data.Properties.SourceCatalog, e.Data.Properties.SourceID),
+	)
+}

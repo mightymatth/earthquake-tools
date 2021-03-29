@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-func ParseEvent(body io.Reader) (event *EarthquakeEvent, err error) {
-	err = json.NewDecoder(body).Decode(event)
+func ParseEvent(body io.Reader) (event EarthquakeEvent, err error) {
+	err = json.NewDecoder(body).Decode(&event)
 	if err != nil {
-		return nil, fmt.Errorf("cannot decode earthquake event: %v", err)
+		return event, fmt.Errorf("cannot decode earthquake event: %v", err)
 	}
 
 	return event, err
