@@ -1,10 +1,12 @@
 package action
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 	"log"
+	"strconv"
 )
 
 type SetDelayAction struct {
@@ -45,10 +47,6 @@ e.g.: <code>2</code>, <code>60</code>
 `
 }
 
-func (a SetDelayAction) WrongInput() string {
-	return "Wrong input. Integer or decimal number expected."
-}
-
 func (a SetDelayAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
 		NewSubscription(sub.SubID, ResetInput).Encode())
@@ -79,4 +77,42 @@ func ShowSetDelay(chatID int64, subID string, bot *tgbotapi.BotAPI, s storage.Se
 	}
 
 	_, _ = bot.Send(msg)
+}
+
+func (a SetDelayAction) ProcessUserInput(bot *tgbotapi.BotAPI, update *tgbotapi.Update, s storage.Service) {
+	delay, err := a.processInputValue(update.Message.Text)
+	if err != nil {
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, a.WrongInput())
+		_, _ = bot.Send(msg)
+		ShowSetDelay(update.Message.Chat.ID, a.Params.P1, bot, s)
+		return
+	}
+
+	delayUpdate := entity.SubscriptionUpdate{Delay: delay}
+	_, err = storage.Service.UpdateSubscription(s, a.Params.P1, &delayUpdate)
+	if err != nil {
+		log.Printf("cannot set delay to subscription: %v", err)
+		return
+	}
+
+	_ = ResetAwaitInput(ResetInput, update.Message.Chat.ID, s)
+	ShowSubscription(update.Message.Chat.ID, a.Params.P1, bot, s)
+}
+
+func (a SetDelayAction) processInputValue(text string) (float64, error) {
+	delay, err := strconv.ParseFloat(text, 64)
+	if err != nil {
+		return 0, fmt.Errorf("cannot parse text to number")
+	}
+
+	switch {
+	case delay < 1, delay > 5e6:
+		return 0, fmt.Errorf("invalid range")
+	default:
+		return delay, nil
+	}
+}
+
+func (a SetDelayAction) WrongInput() string {
+	return "Wrong input. A whole or decimal number expected; in range [1, 5e6]"
 }

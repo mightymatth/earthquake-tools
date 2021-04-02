@@ -41,10 +41,6 @@ To send the location, click <b>Send attachment</b> icon and click on <b>Send loc
 `
 }
 
-func (a SetLocationAction) WrongInput() string {
-	return "Wrong input. Location is expected."
-}
-
 func (a SetLocationAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
 		NewSubscription(sub.SubID, ResetInput).Encode())
@@ -74,4 +70,33 @@ func ShowSetLocation(chatID int64, subID string, bot *tgbotapi.BotAPI, s storage
 	}
 
 	_, _ = bot.Send(msg)
+}
+
+func (a SetLocationAction) ProcessUserInput(bot *tgbotapi.BotAPI, update *tgbotapi.Update, s storage.Service) {
+	inputLoc := update.Message.Location
+	if inputLoc == nil {
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, a.WrongInput())
+		_, _ = bot.Send(msg)
+		ShowSetLocation(update.Message.Chat.ID, a.Params.P1, bot, s)
+		return
+	}
+
+	location := entity.Location{
+		Lat: inputLoc.Latitude,
+		Lng: inputLoc.Longitude,
+	}
+
+	locationUpdate := entity.SubscriptionUpdate{Location: &location}
+	_, err := storage.Service.UpdateSubscription(s, a.Params.P1, &locationUpdate)
+	if err != nil {
+		log.Printf("cannot set location to subscription: %v", err)
+		return
+	}
+
+	_ = ResetAwaitInput(ResetInput, update.Message.Chat.ID, s)
+	ShowSubscription(update.Message.Chat.ID, a.Params.P1, bot, s)
+}
+
+func (a SetLocationAction) WrongInput() string {
+	return "Wrong input. Location is expected."
 }

@@ -26,7 +26,7 @@ const ResetInput ResetInputType = "+"
 
 type Actionable interface {
 	Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s storage.Service)
-	ToAction() Action
+	ProcessUserInput(bot *tgbotapi.BotAPI, update *tgbotapi.Update, s storage.Service)
 }
 
 func New(data string) (Actionable, error) {
@@ -76,6 +76,10 @@ func Decode(data string) (Actionable, error) {
 	default:
 		return nil, errors.Errorf("action with command '%s' doesn't exist", cmd)
 	}
+}
+
+func (a Action) ProcessUserInput(bot *tgbotapi.BotAPI, update *tgbotapi.Update, s storage.Service) {
+	ShowUnknownCommand(bot, update.Message.Chat.ID)
 }
 
 func ResetAwaitInput(resetInput ResetInputType, chatID int64, s storage.Service) error {

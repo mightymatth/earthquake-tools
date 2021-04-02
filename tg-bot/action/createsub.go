@@ -1,6 +1,7 @@
 package action
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 	"log"
@@ -43,6 +44,24 @@ func (a CreateSubscriptionAction) inlineButtons() *tgbotapi.InlineKeyboardMarkup
 	return &kb
 }
 
+func (a CreateSubscriptionAction) ProcessUserInput(bot *tgbotapi.BotAPI, update *tgbotapi.Update, s storage.Service) {
+	if err := a.validateInput(update.Message.Text); err != nil {
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, a.WrongInput())
+		_, _ = bot.Send(msg)
+		ShowCreateSubscription(update.Message.Chat.ID, bot)
+		return
+	}
+
+	sub, err := storage.Service.CreateSubscription(s, update.Message.Chat.ID, update.Message.Text)
+	if err != nil {
+		log.Printf("cannot create subscription: %v", err)
+		return
+	}
+
+	_ = ResetAwaitInput(ResetInput, update.Message.Chat.ID, s)
+	ShowSubscription(update.Message.Chat.ID, sub.SubID, bot, s)
+}
+
 func ShowCreateSubscription(chatID int64, bot *tgbotapi.BotAPI) {
 	setRadiusAction := NewCreateSubscriptionAction()
 	msg := tgbotapi.MessageConfig{
@@ -59,6 +78,15 @@ func ShowCreateSubscription(chatID int64, bot *tgbotapi.BotAPI) {
 	_, _ = bot.Send(msg)
 }
 
+func (a CreateSubscriptionAction) validateInput(text string) error {
+	switch {
+	case text == "", len(text) > 64:
+		return fmt.Errorf("invalid")
+	default:
+		return nil
+	}
+}
+
 func (a CreateSubscriptionAction) WrongInput() string {
-	return "Wrong input. Text value expected."
+	return "Wrong input. A simple, text value expected; no more than 64 characters."
 }

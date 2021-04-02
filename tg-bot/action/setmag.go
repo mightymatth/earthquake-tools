@@ -1,10 +1,12 @@
 package action
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 	"log"
+	"strconv"
 )
 
 type SetMagnitudeAction struct {
@@ -41,10 +43,6 @@ e.g.: <code>4.3</code>, <code>5</code>
 `
 }
 
-func (a SetMagnitudeAction) WrongInput() string {
-	return "Wrong input. Integer or decimal number expected."
-}
-
 func (a SetMagnitudeAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
 		NewSubscription(sub.SubID, ResetInput).Encode())
@@ -75,4 +73,42 @@ func ShowSetMagnitude(chatID int64, subID string, bot *tgbotapi.BotAPI, s storag
 	}
 
 	_, _ = bot.Send(msg)
+}
+
+func (a SetMagnitudeAction) ProcessUserInput(bot *tgbotapi.BotAPI, update *tgbotapi.Update, s storage.Service) {
+	mag, err := a.processInputValue(update.Message.Text)
+	if err != nil {
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, a.WrongInput())
+		_, _ = bot.Send(msg)
+		ShowSetMagnitude(update.Message.Chat.ID, a.Params.P1, bot, s)
+		return
+	}
+
+	magUpdate := entity.SubscriptionUpdate{MinMag: mag}
+	_, err = storage.Service.UpdateSubscription(s, a.Params.P1, &magUpdate)
+	if err != nil {
+		log.Printf("cannot set magnitude to subscription: %v", err)
+		return
+	}
+
+	_ = ResetAwaitInput(ResetInput, update.Message.Chat.ID, s)
+	ShowSubscription(update.Message.Chat.ID, a.Params.P1, bot, s)
+}
+
+func (a SetMagnitudeAction) processInputValue(text string) (float64, error) {
+	mag, err := strconv.ParseFloat(text, 64)
+	if err != nil {
+		return 0, fmt.Errorf("cannot parse text to number")
+	}
+
+	switch {
+	case mag < 0.1, mag > 10:
+		return 0, fmt.Errorf("invalid range")
+	default:
+		return mag, nil
+	}
+}
+
+func (a SetMagnitudeAction) WrongInput() string {
+	return "Wrong input. A whole or decimal number expected; in range [0.1, 10]"
 }

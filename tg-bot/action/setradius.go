@@ -1,10 +1,12 @@
 package action
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage"
 	"log"
+	"strconv"
 )
 
 type SetRadiusAction struct {
@@ -42,10 +44,6 @@ e.g.: <code>100.5</code>, <code>350</code>
 `
 }
 
-func (a SetRadiusAction) WrongInput() string {
-	return "Wrong input. Integer or decimal number expected."
-}
-
 func (a SetRadiusAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
 		NewSubscription(sub.SubID, ResetInput).Encode())
@@ -76,4 +74,42 @@ func ShowSetRadius(chatID int64, subID string, bot *tgbotapi.BotAPI, s storage.S
 	}
 
 	_, _ = bot.Send(msg)
+}
+
+func (a SetRadiusAction) ProcessUserInput(bot *tgbotapi.BotAPI, update *tgbotapi.Update, s storage.Service) {
+	radius, err := a.processInputValue(update.Message.Text)
+	if err != nil {
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, a.WrongInput())
+		_, _ = bot.Send(msg)
+		ShowSetRadius(update.Message.Chat.ID, a.Params.P1, bot, s)
+		return
+	}
+
+	radiusUpdate := entity.SubscriptionUpdate{Radius: radius}
+	_, err = storage.Service.UpdateSubscription(s, a.Params.P1, &radiusUpdate)
+	if err != nil {
+		log.Printf("cannot set radius to subscription: %v", err)
+		return
+	}
+
+	_ = ResetAwaitInput(ResetInput, update.Message.Chat.ID, s)
+	ShowSubscription(update.Message.Chat.ID, a.Params.P1, bot, s)
+}
+
+func (a SetRadiusAction) processInputValue(text string) (float64, error) {
+	radius, err := strconv.ParseFloat(text, 64)
+	if err != nil {
+		return 0, fmt.Errorf("cannot parse text to number")
+	}
+
+	switch {
+	case radius < 1, radius > 2000:
+		return 0, fmt.Errorf("invalid range")
+	default:
+		return radius, nil
+	}
+}
+
+func (a SetRadiusAction) WrongInput() string {
+	return "Wrong input. A whole or decimal number expected; in range [1, 2000]"
 }
