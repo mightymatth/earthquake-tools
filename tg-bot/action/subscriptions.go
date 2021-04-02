@@ -34,15 +34,22 @@ Click on any subscription to edit it or create a new one.
 `
 }
 
+var backToHomeButton = tgbotapi.NewInlineKeyboardButtonData("« Home", NewHomeAction().Encode())
+var newSubscriptionButton = tgbotapi.NewInlineKeyboardButtonData("＋ New", NewCreateSubscriptionAction().Encode())
+
 func (a SubscriptionsAction) inlineButtons(
 	subs []entity.Subscription,
 ) *tgbotapi.InlineKeyboardMarkup {
-	home := tgbotapi.NewInlineKeyboardButtonData("« Home", NewHomeAction().Encode())
-	newSub := tgbotapi.NewInlineKeyboardButtonData("＋ New", NewCreateSubscriptionAction().Encode())
+	var staticRow = make([]tgbotapi.InlineKeyboardButton, 0, 2)
+	staticRow = append(staticRow, backToHomeButton)
+
+	if len(subs) < 10 {
+		staticRow = append(staticRow, newSubscriptionButton)
+	}
 
 	rows := append(
 		a.subscriptionRows(subs, 2),
-		tgbotapi.NewInlineKeyboardRow(home, newSub),
+		tgbotapi.NewInlineKeyboardRow(staticRow...),
 	)
 	kb := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	return &kb
