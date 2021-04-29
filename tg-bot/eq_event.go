@@ -28,6 +28,7 @@ type EarthquakeEvent struct {
 	Location   string    `json:"location"`
 	DetailsURL string    `json:"details_url"`
 	SourceID   ID        `json:"source"`
+	EventID    string    `json:"event_id"`
 }
 
 type ID string

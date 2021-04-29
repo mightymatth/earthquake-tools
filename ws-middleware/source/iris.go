@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -57,7 +58,7 @@ func (s Iris) Transform(r io.Reader) ([]EarthquakeData, error) {
 	for _, feature := range features {
 		data := EarthquakeData{
 			Mag:        feature.Magnitude.Mag.Value,
-			MagType:    feature.Magnitude.Type,
+			MagType:    strings.ToLower(feature.Magnitude.Type),
 			Depth:      feature.Origin.Depth.Value/1000,
 			Time:       time.Time(feature.Origin.Time.Value),
 			Lat:        feature.Origin.Latitude.Value,
