@@ -14,7 +14,7 @@ func ParseEvent(body io.Reader) (event EarthquakeEvent, err error) {
 		return event, fmt.Errorf("cannot decode earthquake event: %v", err)
 	}
 
-	log.Printf("%v", event)
+	log.Printf("parsed event: %+v", event)
 	return event, err
 }
 

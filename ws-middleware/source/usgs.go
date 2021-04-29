@@ -8,20 +8,20 @@ import (
 	"time"
 )
 
-const Usgs ID = "USGS"
+const UsgsID ID = "USGS"
 
-type UsgsSource struct {
+type Usgs struct {
 	source
 }
 
-func NewUsgsSource(name, url string) UsgsSource {
-	return UsgsSource{source{
-		Name: name, Url: url,
-		Method: REST, SourceID: Usgs,
+func NewUsgs() Usgs {
+	return Usgs{source{
+		Name: "USGS", Url: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson",
+		Method: REST, SourceID: UsgsID,
 	}}
 }
 
-func (s UsgsSource) Transform(r io.Reader) ([]EarthquakeData, error) {
+func (s Usgs) Transform(r io.Reader) ([]EarthquakeData, error) {
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(r)
 	if err != nil {

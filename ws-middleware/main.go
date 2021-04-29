@@ -15,10 +15,10 @@ func main() {
 	defer cancel()
 
 	sources := []ListenTransformer{
-		source.NewEmscWsSource("EMSC WS",
-			"wss://www.seismicportal.eu/standing_order/websocket"),
-		source.NewUsgsSource("USGS",
-			"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson"),
+		source.NewEmscWs(),
+		source.NewUsgs(),
+		source.NewEmscRest(),
+		source.NewIris(),
 	}
 
 	var wg sync.WaitGroup
@@ -43,10 +43,10 @@ func main() {
 }
 
 type Listener interface {
-	Listen(ctx context.Context, t source.Transformer)
+	Listen(ctx context.Context, lt source.LocateTransformer)
 }
 
 type ListenTransformer interface {
+	source.LocateTransformer
 	Listener
-	source.Transformer
 }

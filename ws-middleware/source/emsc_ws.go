@@ -8,20 +8,20 @@ import (
 	"time"
 )
 
-const EmscWs ID = "EMSC_WS"
+const EmscWsID ID = "EMSC_WS"
 
-type EmscWsSource struct {
+type EmscWs struct {
 	source
 }
 
-func NewEmscWsSource(name, url string) EmscWsSource {
-	return EmscWsSource{source{
-		Name: name, Url: url,
-		Method: WEBSOCKET, SourceID: EmscWs,
+func NewEmscWs() EmscWs {
+	return EmscWs{source{
+		Name: "EMSC WS", Url: "wss://www.seismicportal.eu/standing_order/websocket",
+		Method: WEBSOCKET, SourceID: EmscWsID,
 	}}
 }
 
-func (s EmscWsSource) Transform(r io.Reader) ([]EarthquakeData, error) {
+func (s EmscWs) Transform(r io.Reader) ([]EarthquakeData, error) {
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(r)
 	if err != nil {
@@ -49,7 +49,7 @@ func (s EmscWsSource) Transform(r io.Reader) ([]EarthquakeData, error) {
 		DetailsURL: fmt.Sprintf(`https://www.emsc-csem.org/Earthquake/earthquake.php?id=%s`,
 			event.Data.Properties.SourceID),
 		SourceID: s.SourceID,
-		EventID: event.Data.ID,
+		EventID:  event.Data.Properties.SourceID,
 	}
 
 	return []EarthquakeData{data}, nil

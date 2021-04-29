@@ -12,6 +12,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -44,27 +45,46 @@ type source struct {
 	SourceID ID
 }
 
-func (s source) Listen(ctx context.Context, t Transformer) {
+func (s source) Listen(ctx context.Context, lt LocateTransformer) {
 	switch s.Method {
 	case WEBSOCKET:
-		s.handleWS(ctx, t)
+		s.handleWS(ctx, lt)
 	case REST:
-		s.handleREST(ctx, t)
+		s.handleREST(ctx, lt)
 	}
+}
+
+func (s source) Locate() *url.URL {
+	lURL, err := url.Parse(s.Url)
+	if err != nil {
+		log.Fatalf("incorrect URL (%v) from source '%s': %v",
+			s.Url, s.Name, err)
+	}
+	return lURL
 }
 
 type Transformer interface {
 	Transform(r io.Reader) ([]EarthquakeData, error)
 }
 
-func (s source) handleWS(ctx context.Context, t Transformer) {
+type Locator interface {
+	Locate() *url.URL
+}
+
+type LocateTransformer interface {
+	Transformer
+	Locator
+}
+
+func (s source) handleWS(ctx context.Context, lt LocateTransformer) {
 	restart := make(chan struct{})
 	done := make(chan struct{})
 
 startConnWS:
-	log.Printf("[WS][%s] connecting to %s", s.Name, s.Url)
+	log.Printf("[WS][%s] connecting!", s.Name)
 
-	conn, _, err := websocket.DefaultDialer.Dial(s.Url, nil)
+	sourceURL := lt.Locate().String()
+	conn, _, err := websocket.DefaultDialer.Dial(sourceURL, nil)
 	if err != nil {
 		defer close(done)
 		log.Fatalf("[WS][%s] websocket dial error: %s", s.Name, err)
@@ -84,7 +104,7 @@ startConnWS:
 				return
 			}
 
-			events, err := t.Transform(bytes.NewBuffer(message))
+			events, err := lt.Transform(bytes.NewBuffer(message))
 			if err != nil {
 				log.Printf("[WS][%s] transform data failed: %s", s.Name, err)
 				continue
@@ -142,10 +162,10 @@ func sendToWebhook(data EarthquakeData) error {
 	return nil
 }
 
-func (s source) handleREST(ctx context.Context, t Transformer) {
-	log.Printf("[REST][%s] connecting to %s", s.Name, s.Url)
+func (s source) handleREST(ctx context.Context, lt LocateTransformer) {
+	log.Printf("[REST][%s] connecting!", s.Name)
 
-	events, err := s.getEvents(ctx, t)
+	events, err := s.getEvents(ctx, lt)
 	if err != nil {
 		log.Fatalf("[REST][%s] initial fetch failed: %s", s.Name, err)
 	}
@@ -157,9 +177,9 @@ func (s source) handleREST(ctx context.Context, t Transformer) {
 
 	log.Printf("[REST][%s] connected!", s.Name)
 	for {
-		time.Sleep(5 * time.Second)
+		time.Sleep(15 * time.Second)
 
-		events, err := s.getEvents(ctx, t)
+		events, err := s.getEvents(ctx, lt)
 		if err != nil {
 			log.Printf("[REST][%s] initial fetch failed: %s", s.Name, err)
 			continue
@@ -204,8 +224,9 @@ func difference(a, b []EarthquakeData) []EarthquakeData {
 	return diff
 }
 
-func (s source) getEvents(ctx context.Context, t Transformer) ([]EarthquakeData, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.Url, nil)
+func (s source) getEvents(ctx context.Context, lt LocateTransformer) ([]EarthquakeData, error) {
+	sourceURL := lt.Locate().String()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create GET request: %v", err)
 	}
@@ -218,7 +239,7 @@ func (s source) getEvents(ctx context.Context, t Transformer) ([]EarthquakeData,
 	}
 	defer resp.Body.Close()
 
-	events, err := t.Transform(resp.Body)
+	events, err := lt.Transform(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("cannot transform data: %v", err)
 	}
@@ -256,7 +277,7 @@ func (s source) getEventsFromCache() ([]EarthquakeData, error) {
 }
 
 func (s source) getHashKey() string {
-	key := fmt.Sprintf("%s%s%s%s", s.Name, s.SourceID, s.Url, s.Method)
+	key := fmt.Sprintf("%s%s%s", s.Name, s.SourceID, s.Method)
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(key)))
 }
 
