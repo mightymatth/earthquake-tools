@@ -3,9 +3,11 @@ package source
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/dgraph-io/ristretto"
 	"github.com/gorilla/websocket"
 	"io"
 	"log"
@@ -17,8 +19,22 @@ var webhook = flag.String("webhook",
 	"http://localhost:3300",
 	"webhook address for events")
 
+var cache *ristretto.Cache
+
 func init() {
 	flag.Parse()
+
+	c, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e7,     // number of keys to track frequency of (10M).
+		MaxCost:     1 << 30, // maximum cost of cache (1GB).
+		BufferItems: 64,      // number of keys per Get buffer.
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	cache = c
 }
 
 type source struct {
@@ -33,7 +49,7 @@ func (s source) Listen(ctx context.Context, t Transformer) {
 	case WEBSOCKET:
 		s.handleWS(ctx, t)
 	case REST:
-		s.handleREST(ctx)
+		s.handleREST(ctx, t)
 	}
 }
 
@@ -67,7 +83,6 @@ startConnWS:
 				log.Printf("[WS][%s] read error: %s", s.Name, err)
 				return
 			}
-			log.Printf("[WS][%s] received: %s", s.Name, message)
 
 			events, err := t.Transform(bytes.NewBuffer(message))
 			if err != nil {
@@ -127,8 +142,122 @@ func sendToWebhook(data EarthquakeData) error {
 	return nil
 }
 
-func (s source) handleREST(ctx context.Context) {
+func (s source) handleREST(ctx context.Context, t Transformer) {
+	log.Printf("[REST][%s] connecting to %s", s.Name, s.Url)
 
+	events, err := s.getEvents(ctx, t)
+	if err != nil {
+		log.Fatalf("[REST][%s] initial fetch failed: %s", s.Name, err)
+	}
+
+	err = s.setEventsToCache(events)
+	if err != nil {
+		log.Fatalf("[REST][%s] initial set to cache failed: %s", s.Name, err)
+	}
+
+	log.Printf("[REST][%s] connected!", s.Name)
+	for {
+		time.Sleep(5 * time.Second)
+
+		events, err := s.getEvents(ctx, t)
+		if err != nil {
+			log.Printf("[REST][%s] initial fetch failed: %s", s.Name, err)
+			continue
+		}
+
+		cacheEvents, err := s.getEventsFromCache()
+		if err != nil {
+			log.Fatalf("[REST][%s] fetch from cache failed: %s", s.Name, err)
+		}
+
+		diffEvents := difference(events, cacheEvents)
+
+		if len(diffEvents) > 0 {
+			err = s.setEventsToCache(events)
+			if err != nil {
+				log.Fatalf("[REST][%s] set to cache failed: %s", s.Name, err)
+			}
+		}
+
+		for _, event := range diffEvents {
+			err = sendToWebhook(event)
+			if err != nil {
+				log.Printf("[REST][%s] sending to webhook failed: %s", s.Name, err)
+				continue
+			}
+		}
+	}
+}
+
+//difference returns the events in `a` that aren't in `b`.
+func difference(a, b []EarthquakeData) []EarthquakeData {
+	mb := make(map[string]struct{}, len(b))
+	for _, x := range b {
+		mb[x.EventID] = struct{}{}
+	}
+	var diff []EarthquakeData
+	for _, x := range a {
+		if _, found := mb[x.EventID]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
+}
+
+func (s source) getEvents(ctx context.Context, t Transformer) ([]EarthquakeData, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.Url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create GET request: %v", err)
+	}
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("cannot fetch from endpoint: %v", err)
+	}
+	defer resp.Body.Close()
+
+	events, err := t.Transform(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("cannot transform data: %v", err)
+	}
+
+	return events, nil
+}
+
+func (s source) setEventsToCache(events []EarthquakeData) error {
+	success := cache.Set(s.getHashKey(), events, 0)
+	if !success {
+		return fmt.Errorf("set to cache failed")
+	}
+
+	return nil
+}
+
+func (s source) getEventsFromCache() ([]EarthquakeData, error) {
+	value, found := cache.Get(s.getHashKey())
+	if !found {
+		// wait for value to pass through buffers
+		time.Sleep(10 * time.Millisecond)
+
+		value, found = cache.Get("key")
+		if !found {
+			return nil, fmt.Errorf("events not found for this key")
+		}
+	}
+
+	events, ok := value.([]EarthquakeData)
+	if !ok {
+		return nil, fmt.Errorf("cannot cast from cache to exact struct")
+	}
+
+	return events, nil
+}
+
+func (s source) getHashKey() string {
+	key := fmt.Sprintf("%s%s%s%s", s.Name, s.SourceID, s.Url, s.Method)
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(key)))
 }
 
 //EarthquakeData represents a narrow set of attributes that expresses a single
@@ -143,6 +272,7 @@ type EarthquakeData struct {
 	Location   string    `json:"location"`
 	DetailsURL string    `json:"details_url"`
 	SourceID   ID        `json:"source"`
+	EventID    string    `json:"event_id"`
 }
 
 type Method string

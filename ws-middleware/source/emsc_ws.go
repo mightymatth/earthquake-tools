@@ -49,6 +49,7 @@ func (s EmscWsSource) Transform(r io.Reader) ([]EarthquakeData, error) {
 		DetailsURL: fmt.Sprintf(`https://www.emsc-csem.org/Earthquake/earthquake.php?id=%s`,
 			event.Data.Properties.SourceID),
 		SourceID: s.SourceID,
+		EventID: event.Data.ID,
 	}
 
 	return []EarthquakeData{data}, nil

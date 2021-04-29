@@ -17,6 +17,8 @@ func main() {
 	sources := []ListenTransformer{
 		source.NewEmscWsSource("EMSC WS",
 			"wss://www.seismicportal.eu/standing_order/websocket"),
+		source.NewUsgsSource("USGS",
+			"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson"),
 	}
 
 	var wg sync.WaitGroup
