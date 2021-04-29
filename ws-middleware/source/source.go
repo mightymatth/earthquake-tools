@@ -75,8 +75,6 @@ startConnWS:
 				continue
 			}
 
-			log.Printf("events: %v, length: %v", events, len(events))
-
 			for _, data := range events {
 				err = sendToWebhook(data)
 				if err != nil {
@@ -138,6 +136,7 @@ func (s source) handleREST(ctx context.Context) {
 type EarthquakeData struct {
 	Mag        float64   `json:"mag"`
 	MagType    string    `json:"magtype"`
+	Depth      float64   `json:"depth"`
 	Time       time.Time `json:"time"`
 	Lat        float64   `json:"lat"`
 	Lon        float64   `json:"lon"`

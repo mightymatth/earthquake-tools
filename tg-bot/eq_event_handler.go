@@ -18,16 +18,12 @@ func EqEventHandler(bot *tgbotapi.BotAPI, s storage.Service) func(http.ResponseW
 			log.Printf("processing event failed: %v", err)
 		}
 
-		if event.Action != "create" {
-			return
-		}
-
 		eventData := entity.EventData{
-			Magnitude: event.Data.Properties.Mag,
-			Delay:     time.Now().Sub(event.Data.Properties.Time).Minutes(),
+			Magnitude: event.Mag,
+			Delay:     time.Now().Sub(event.Time).Minutes(),
 			Location: entity.Location{
-				Lat: event.Data.Properties.Lat,
-				Lng: event.Data.Properties.Lon,
+				Lat: event.Lat,
+				Lng: event.Lon,
 			},
 		}
 
@@ -84,13 +80,9 @@ func broadcast(eventReport eventReport, chatIDs []int64, bot *tgbotapi.BotAPI) {
 }
 
 func eventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
-	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details & Updates",
-		fmt.Sprintf("https://www.seismicportal.eu/eventdetails.html?unid=%s", event.Data.ID),
-	)
+	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details & Updates", event.DetailsURL)
 	mapsURL := tgbotapi.NewInlineKeyboardButtonURL("Location 📍",
-		fmt.Sprintf("http://www.google.com/maps/place/%f,%f",
-			event.Data.Properties.Lat,
-			event.Data.Properties.Lon),
+		fmt.Sprintf("https://www.google.com/maps/place/%f,%f", event.Lat, event.Lon),
 	)
 
 	return tgbotapi.NewInlineKeyboardMarkup(
@@ -107,17 +99,6 @@ func getLocationTime(timeUTC time.Time, lat, lon float64) string {
 	}
 
 	return localTime.Format("Mon, 2 Jan 2006 15:04:05 MST")
-}
-
-func sourceLinkHTML(sourceType, ID string) string {
-	switch SourceType(sourceType) {
-	case emsc:
-		return fmt.Sprintf(
-			`<a href="https://www.emsc-csem.org/Earthquake/earthquake.php?id=%s">%s/%s</a>`,
-			ID, sourceType, ID)
-	default:
-		return fmt.Sprintf(`<code>%s/%s</code>`, sourceType, ID)
-	}
 }
 
 type SourceType string
@@ -140,19 +121,15 @@ func (e eventReport) String() string {
 ⏳ Relative time: %s
 ⏱ UTC Time: <code>%s</code>
 ⏰ Local Time: <code>%s</code>
-🏣 Source/ID: %s
+🏣 Source: <code>%s</code>
 			`,
-		e.Data.Properties.Mag,
-		e.Data.Properties.MagType,
-		e.Data.Properties.Depth,
-		e.Data.Properties.FlynnRegion,
-		humanize.RelTime(e.Data.Properties.Time, e.TimeNow, "ago", "later"),
-		e.Data.Properties.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
-		getLocationTime(
-			e.Data.Properties.Time,
-			e.Data.Properties.Lat,
-			e.Data.Properties.Lon,
-		),
-		sourceLinkHTML(e.Data.Properties.SourceCatalog, e.Data.Properties.SourceID),
+		e.Mag,
+		e.MagType,
+		e.Depth,
+		e.Location,
+		humanize.RelTime(e.Time, e.TimeNow, "ago", "later"),
+		e.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
+		getLocationTime(e.Time, e.Lat, e.Lon),
+		e.SourceID,
 	)
 }

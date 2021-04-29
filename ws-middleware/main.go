@@ -35,8 +35,8 @@ func main() {
 	}()
 
 	select {
-	case <- c:
-	case <- interrupt:
+	case <-c:
+	case <-interrupt:
 	}
 }
 

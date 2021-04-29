@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"time"
 )
 
@@ -23,23 +22,26 @@ func NewEmscWsSource(name, url string) EmscWsSource {
 }
 
 func (s EmscWsSource) Transform(r io.Reader) ([]EarthquakeData, error) {
-	log.Println("im in emsc ws transform")
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(r)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read from buffer: %v", err)
 	}
 
-	b := buf.Bytes()
 	var event EmscEvent
-	err = json.Unmarshal(b, &event)
+	err = json.Unmarshal(buf.Bytes(), &event)
 	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal event data: %v", err)
+	}
+
+	if event.Action != "create" {
+		return []EarthquakeData{}, nil
 	}
 
 	data := EarthquakeData{
 		Mag:      event.Data.Properties.Mag,
 		MagType:  event.Data.Properties.MagType,
+		Depth:    event.Data.Properties.Depth,
 		Time:     event.Data.Properties.Time,
 		Lat:      event.Data.Properties.Lat,
 		Lon:      event.Data.Properties.Lon,
