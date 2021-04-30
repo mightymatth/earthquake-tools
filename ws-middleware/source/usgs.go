@@ -41,7 +41,7 @@ func (s Usgs) Transform(r io.Reader) ([]EarthquakeData, error) {
 			Mag:        feature.Properties.Mag,
 			MagType:    feature.Properties.Magtype,
 			Depth:      feature.Geometry.Coordinates[2],
-			Time:       time.Unix(feature.Properties.Time/1000, 0),
+			Time:       time.Unix(feature.Properties.Time/1000, 0).UTC(),
 			Lat:        feature.Geometry.Coordinates[1],
 			Lon:        feature.Geometry.Coordinates[0],
 			Location:   feature.Properties.Place,
