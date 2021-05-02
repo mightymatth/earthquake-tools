@@ -23,8 +23,6 @@ var webhook = flag.String("webhook",
 var cache *ristretto.Cache
 
 func init() {
-	flag.Parse()
-
 	c, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: 1e7,     // number of keys to track frequency of (10M).
 		MaxCost:     1 << 30, // maximum cost of cache (1GB).
@@ -159,6 +157,8 @@ func sendToWebhook(data EarthquakeData) error {
 		return fmt.Errorf("request failed: %s", err)
 	}
 
+	log.Printf("sent to webhook: %+v", data)
+
 	return nil
 }
 
@@ -262,7 +262,7 @@ func (s source) getEventsFromCache() ([]EarthquakeData, error) {
 		// wait for value to pass through buffers
 		time.Sleep(10 * time.Millisecond)
 
-		value, found = cache.Get("key")
+		value, found = cache.Get(s.getHashKey())
 		if !found {
 			return nil, fmt.Errorf("events not found for this key")
 		}

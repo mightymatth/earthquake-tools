@@ -34,7 +34,12 @@ func (s Usgs) Transform(r io.Reader) ([]EarthquakeData, error) {
 		return nil, fmt.Errorf("cannot unmarshal event data: %v", err)
 	}
 
-	features := eventsRes.Features[:10]
+	maxFeatures := 10
+	if featuresLen := len(eventsRes.Features); featuresLen < maxFeatures {
+		maxFeatures = featuresLen
+	}
+
+	features := eventsRes.Features[:maxFeatures]
 	events := make([]EarthquakeData, 0, len(features))
 	for _, feature := range features {
 		data := EarthquakeData{

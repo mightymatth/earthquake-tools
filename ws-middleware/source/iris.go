@@ -5,8 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -15,29 +13,13 @@ import (
 const IrisID ID = "IRIS"
 
 type Iris struct {
-	source
+	FdsnWs
 }
 
 func NewIris() Iris {
-	return Iris{source{
-		Name: "IRIS", Url: "https://service.iris.edu/fdsnws/event/1/query",
-		Method: REST, SourceID: IrisID,
-	}}
-}
-
-func (s Iris) Locate() *url.URL {
-	lURL, err := url.Parse(s.Url)
-	if err != nil {
-		log.Fatalf("incorrect URL (%v) from source '%s': %v",
-			s.Url, s.Name, err)
+	return Iris{
+		NewFdsnWs("IRIS", "https://service.iris.edu/fdsnws/event/1/query", IrisID),
 	}
-
-	q := lURL.Query()
-	q.Set("starttime", time.Now().Add(-24*time.Hour).Format("2006-01-02T15:04:05Z"))
-	q.Set("limit", fmt.Sprintf("%d", 10))
-	lURL.RawQuery = q.Encode()
-
-	return lURL
 }
 
 func (s Iris) Transform(r io.Reader) ([]EarthquakeData, error) {
@@ -53,13 +35,18 @@ func (s Iris) Transform(r io.Reader) ([]EarthquakeData, error) {
 		return nil, fmt.Errorf("cannot unmarshal event data: %v", err)
 	}
 
-	features := eventsRes.EventParameters.Event[:10]
+	maxFeatures := 10
+	if featuresLen := len(eventsRes.EventParameters.Event); featuresLen < maxFeatures {
+		maxFeatures = featuresLen
+	}
+
+	features := eventsRes.EventParameters.Event[:maxFeatures]
 	events := make([]EarthquakeData, 0, len(features))
 	for _, feature := range features {
 		data := EarthquakeData{
 			Mag:        feature.Magnitude.Mag.Value,
 			MagType:    strings.ToLower(feature.Magnitude.Type),
-			Depth:      feature.Origin.Depth.Value/1000,
+			Depth:      feature.Origin.Depth.Value / 1000,
 			Time:       time.Time(feature.Origin.Time.Value).UTC(),
 			Lat:        feature.Origin.Latitude.Value,
 			Lon:        feature.Origin.Longitude.Value,
@@ -120,7 +107,7 @@ type IrisResponse struct {
 				Catalog             string `xml:"catalog,attr"`
 				Time                struct {
 					Text  string     `xml:",chardata"`
-					Value customTime `xml:"value"`
+					Value fdsnwsTime `xml:"value"`
 				} `xml:"time"`
 				CreationInfo struct {
 					Text   string `xml:",chardata"`
@@ -154,23 +141,4 @@ type IrisResponse struct {
 			} `xml:"magnitude"`
 		} `xml:"event"`
 	} `xml:"eventParameters"`
-}
-
-type customTime time.Time
-
-func (c *customTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	var v string
-
-	err := d.DecodeElement(&v, &start)
-	if err != nil {
-		return err
-	}
-
-	parse, err := time.Parse("2006-01-02T15:04:05", v)
-	if err != nil {
-		return err
-	}
-
-	*c = customTime(parse)
-	return nil
 }

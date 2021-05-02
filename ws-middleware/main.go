@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/mightymatth/earthquake-tools/ws-middleware/source"
 	"os"
 	"os/signal"
@@ -9,6 +10,8 @@ import (
 )
 
 func main() {
+	flag.Parse()
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	ctx, cancel := context.WithCancel(context.Background())

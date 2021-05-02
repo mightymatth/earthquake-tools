@@ -5,21 +5,38 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math"
+	"net/url"
 	"time"
 )
 
 const EmscRestID ID = "EMSC_REST"
 
 type EmscRest struct {
-	source
+	FdsnWs
 }
 
 func NewEmscRest() EmscRest {
-	return EmscRest{source{
-		Name: "EMSC", Url: "https://www.seismicportal.eu/fdsnws/event/1/query?limit=10&format=json",
-		Method: REST, SourceID: EmscRestID,
-	}}
+	return EmscRest{
+		NewFdsnWs("EMSC", "https://www.seismicportal.eu/fdsnws/event/1/query", EmscRestID),
+	}
+}
+
+func (s EmscRest) Locate() *url.URL {
+	lURL, err := url.Parse(s.Url)
+	if err != nil {
+		log.Fatalf("incorrect URL (%v) from source '%s': %v",
+			s.Url, s.Name, err)
+	}
+
+	q := lURL.Query()
+	q.Set("starttime", time.Now().Add(-36*time.Hour).Format("2006-01-02"))
+	q.Set("limit", fmt.Sprintf("%d", 10))
+	q.Set("format", "json")
+	lURL.RawQuery = q.Encode()
+
+	return lURL
 }
 
 func (s EmscRest) Transform(r io.Reader) ([]EarthquakeData, error) {
@@ -35,7 +52,12 @@ func (s EmscRest) Transform(r io.Reader) ([]EarthquakeData, error) {
 		return nil, fmt.Errorf("cannot unmarshal event data: %v", err)
 	}
 
-	features := eventsRes.Features[:10]
+	maxFeatures := 10
+	if featuresLen := len(eventsRes.Features); featuresLen < maxFeatures {
+		maxFeatures = featuresLen
+	}
+
+	features := eventsRes.Features[:maxFeatures]
 	events := make([]EarthquakeData, 0, len(features))
 	for _, feature := range features {
 		data := EarthquakeData{
