@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func (s Iris) Transform(r io.Reader) ([]EarthquakeData, error) {
 		data := EarthquakeData{
 			Mag:        feature.Magnitude.Mag.Value,
 			MagType:    strings.ToLower(feature.Magnitude.Type),
-			Depth:      feature.Origin.Depth.Value / 1000,
+			Depth:      math.Abs(feature.Origin.Depth.Value / 1000),
 			Time:       time.Time(feature.Origin.Time.Value).UTC(),
 			Lat:        feature.Origin.Latitude.Value,
 			Lon:        feature.Origin.Longitude.Value,
