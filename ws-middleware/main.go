@@ -22,6 +22,7 @@ func main() {
 		source.NewUsgs(),
 		source.NewEmscRest(),
 		source.NewIris(),
+		source.NewUspBr(),
 	}
 
 	var wg sync.WaitGroup

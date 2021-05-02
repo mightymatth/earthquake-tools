@@ -18,7 +18,7 @@ type UspBr struct {
 
 func NewUspBr() UspBr {
 	return UspBr{
-		NewFdsnWs("IRIS", "https://service.iris.edu/fdsnws/event/1/query", UspBrID),
+		NewFdsnWs("USP-BR", "http://www.moho.iag.usp.br/fdsnws/event/1/query", UspBrID),
 	}
 }
 
