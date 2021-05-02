@@ -23,6 +23,7 @@ func main() {
 		source.NewEmscRest(),
 		source.NewIris(),
 		source.NewUspBr(),
+		source.NewGeofon(),
 	}
 
 	var wg sync.WaitGroup

@@ -42,6 +42,9 @@ func eventsValid(t *testing.T, events []source.EarthquakeData) {
 
 		assert.NotEmpty(t, event.SourceID)
 		assert.NotEmpty(t, event.EventID)
+
+		// Uncomment for debugging
+		//t.Logf("%+v", event)
 	}
 }
 

@@ -5,30 +5,32 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
+	"regexp"
 	"strings"
 	"time"
 )
 
-const UspBrID ID = "USPBR"
+const GeofonID ID = "GEOFON"
 
-type UspBr struct {
+type Geofon struct {
 	FdsnWs
 }
 
-func NewUspBr() UspBr {
-	return UspBr{
-		NewFdsnWs("USP-BR", "http://www.moho.iag.usp.br/fdsnws/event/1/query", UspBrID),
+func NewGeofon() Geofon {
+	return Geofon{
+		NewFdsnWs("GEOFON", "https://geofon.gfz-potsdam.de/fdsnws/event/1/query", GeofonID),
 	}
 }
 
-func (s UspBr) Transform(r io.Reader) ([]EarthquakeData, error) {
+func (s Geofon) Transform(r io.Reader) ([]EarthquakeData, error) {
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(r)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read from buffer: %v", err)
 	}
 
-	var eventsRes UspBrResponse
+	var eventsRes GeofonResponse
 	err = xml.Unmarshal(buf.Bytes(), &eventsRes)
 	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal event data: %v", err)
@@ -43,16 +45,17 @@ func (s UspBr) Transform(r io.Reader) ([]EarthquakeData, error) {
 	events := make([]EarthquakeData, 0, len(features))
 	for _, feature := range features {
 		data := EarthquakeData{
-			Mag:        feature.Magnitude.Mag.Value,
-			MagType:    strings.ToLower(feature.Magnitude.Type),
-			Depth:      feature.Origin.Depth.Value / 1000,
-			Time:       time.Time(feature.Origin.Time.Value).UTC(),
-			Lat:        feature.Origin.Latitude.Value,
-			Lon:        feature.Origin.Longitude.Value,
-			Location:   feature.Description.Text,
-			DetailsURL: fmt.Sprintf("http://www.moho.iag.usp.br/eq/event/%s", geofonEventID(feature.PublicID)),
-			SourceID:   s.SourceID,
-			EventID:    geofonEventID(feature.PublicID),
+			Mag:      feature.Magnitude.Mag.Value,
+			MagType:  strings.ToLower(feature.Magnitude.Type),
+			Depth:    math.Abs(feature.Origin.Depth.Value / 1000),
+			Time:     time.Time(feature.Origin.Time.Value).UTC(),
+			Lat:      feature.Origin.Latitude.Value,
+			Lon:      feature.Origin.Longitude.Value,
+			Location: feature.Description.Text,
+			DetailsURL: fmt.Sprintf("https://geofon.gfz-potsdam.de/eqinfo/event.php?id=%s",
+				geofonEventID(feature.PublicID)),
+			SourceID: s.SourceID,
+			EventID:  geofonEventID(feature.PublicID),
 		}
 
 		events = append(events, data)
@@ -61,7 +64,18 @@ func (s UspBr) Transform(r io.Reader) ([]EarthquakeData, error) {
 	return events, nil
 }
 
-type UspBrResponse struct {
+func geofonEventID(publicIDPath string) string {
+	r, _ := regexp.Compile("geofon/(.+)$")
+
+	parts := r.FindStringSubmatch(publicIDPath)
+	if len(parts) != 2 {
+		return ""
+	}
+
+	return parts[1]
+}
+
+type GeofonResponse struct {
 	XMLName         xml.Name `xml:"quakeml"`
 	Text            string   `xml:",chardata"`
 	Xmlns           string   `xml:"xmlns,attr"`
@@ -77,11 +91,9 @@ type UspBrResponse struct {
 				Text     string `xml:"text"`
 				Type     string `xml:"type"`
 			} `xml:"description"`
-			TypeCertainty string `xml:"typeCertainty"`
-			CreationInfo  struct {
+			CreationInfo struct {
 				Text         string `xml:",chardata"`
 				AgencyID     string `xml:"agencyID"`
-				Author       string `xml:"author"`
 				CreationTime string `xml:"creationTime"`
 			} `xml:"creationInfo"`
 			Magnitude struct {
@@ -91,7 +103,6 @@ type UspBrResponse struct {
 				CreationInfo struct {
 					Text         string `xml:",chardata"`
 					AgencyID     string `xml:"agencyID"`
-					Author       string `xml:"author"`
 					CreationTime string `xml:"creationTime"`
 				} `xml:"creationInfo"`
 				Mag struct {
@@ -99,10 +110,9 @@ type UspBrResponse struct {
 					Value       float64 `xml:"value"`
 					Uncertainty string  `xml:"uncertainty"`
 				} `xml:"mag"`
-				Type             string `xml:"type"`
-				OriginID         string `xml:"originID"`
-				MethodID         string `xml:"methodID"`
-				EvaluationStatus string `xml:"evaluationStatus"`
+				Type     string `xml:"type"`
+				OriginID string `xml:"originID"`
+				MethodID string `xml:"methodID"`
 			} `xml:"magnitude"`
 			Origin struct {
 				Text     string `xml:",chardata"`
@@ -128,18 +138,17 @@ type UspBrResponse struct {
 					UsedPhaseCount         string `xml:"usedPhaseCount"`
 					AssociatedStationCount string `xml:"associatedStationCount"`
 					UsedStationCount       string `xml:"usedStationCount"`
-					DepthPhaseCount        string `xml:"depthPhaseCount"`
 					StandardError          string `xml:"standardError"`
 					AzimuthalGap           string `xml:"azimuthalGap"`
 					MaximumDistance        string `xml:"maximumDistance"`
 					MinimumDistance        string `xml:"minimumDistance"`
 					MedianDistance         string `xml:"medianDistance"`
+					DepthPhaseCount        string `xml:"depthPhaseCount"`
 				} `xml:"quality"`
 				EvaluationMode string `xml:"evaluationMode"`
 				CreationInfo   struct {
 					Text         string `xml:",chardata"`
 					AgencyID     string `xml:"agencyID"`
-					Author       string `xml:"author"`
 					CreationTime string `xml:"creationTime"`
 				} `xml:"creationInfo"`
 				Depth struct {
@@ -147,6 +156,9 @@ type UspBrResponse struct {
 					Value       float64 `xml:"value"`
 					Uncertainty string  `xml:"uncertainty"`
 				} `xml:"depth"`
+				MethodID          string `xml:"methodID"`
+				EarthModelID      string `xml:"earthModelID"`
+				DepthType         string `xml:"depthType"`
 				OriginUncertainty struct {
 					Text                            string `xml:",chardata"`
 					MinHorizontalUncertainty        string `xml:"minHorizontalUncertainty"`
@@ -154,14 +166,29 @@ type UspBrResponse struct {
 					AzimuthMaxHorizontalUncertainty string `xml:"azimuthMaxHorizontalUncertainty"`
 					PreferredDescription            string `xml:"preferredDescription"`
 				} `xml:"originUncertainty"`
-				MethodID         string `xml:"methodID"`
-				EarthModelID     string `xml:"earthModelID"`
 				EvaluationStatus string `xml:"evaluationStatus"`
-				DepthType        string `xml:"depthType"`
 			} `xml:"origin"`
 			PreferredOriginID    string `xml:"preferredOriginID"`
 			PreferredMagnitudeID string `xml:"preferredMagnitudeID"`
-			Type                 string `xml:"type"`
 		} `xml:"event"`
 	} `xml:"eventParameters"`
+}
+
+type geofonTime time.Time
+
+func (c *geofonTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var v string
+
+	err := d.DecodeElement(&v, &start)
+	if err != nil {
+		return err
+	}
+
+	parse, err := time.Parse("2006-01-02T15:04:05.999999Z", v)
+	if err != nil {
+		return err
+	}
+
+	*c = geofonTime(parse)
+	return nil
 }
