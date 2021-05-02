@@ -16,7 +16,6 @@ FROM alpine:latest
 WORKDIR /root
 COPY --from=builder /out/main .
 
-ENV SOURCE "wss://www.seismicportal.eu/standing_order/websocket"
 ENV WEBHOOK "http://localhost:3300"
 
-CMD ./main -source $SOURCE -webhook $WEBHOOK
+CMD ./main -webhook $WEBHOOK

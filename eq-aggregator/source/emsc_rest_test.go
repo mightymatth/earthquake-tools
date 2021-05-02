@@ -2,7 +2,7 @@ package source_test
 
 import (
 	"bytes"
-	"github.com/mightymatth/earthquake-tools/ws-middleware/source"
+	"github.com/mightymatth/earthquake-tools/eq-aggregator/source"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

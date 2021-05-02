@@ -2,7 +2,7 @@
 
 ## Local development
 
-Setup `ws-middleware` that will send events to `localhost:3300` and run the next
+Setup `eq-aggregator` that will send events to `localhost:3300` and run the next
 script:
 
 ```shell

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/mightymatth/earthquake-tools/ws-middleware/source"
+	"github.com/mightymatth/earthquake-tools/eq-aggregator/source"
 	"os"
 	"os/signal"
 	"sync"

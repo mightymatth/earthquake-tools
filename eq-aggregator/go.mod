@@ -1,4 +1,4 @@
-module github.com/mightymatth/earthquake-tools/ws-middleware
+module github.com/mightymatth/earthquake-tools/eq-aggregator
 
 go 1.15
 
