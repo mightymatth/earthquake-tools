@@ -25,10 +25,14 @@ func TestIris_Transform(t *testing.T) {
 func eventsValid(t *testing.T, events []source.EarthquakeData) {
 	for _, event := range events {
 		assert.GreaterOrEqual(t, event.Mag, 0.0)
+		assert.Less(t, event.Mag, 13.0)
 		assert.NotEmpty(t, event.MagType)
 		assert.GreaterOrEqual(t, event.Depth, 0.0)
 		assert.True(t, time.Now().After(event.Time))
-		assert.True(t, time.Now().Add(-48*time.Hour).Before(event.Time))
+		// If the time is incorrectly parsed, it will be set to
+		// Mon Jan 2 15:04:05 MST 2006 (Unix time 1136239445),
+		// so we check the event time to be after that.
+		assert.True(t, event.Time.After(time.Unix(1136239445, 0)))
 		assert.LessOrEqual(t, event.Lat, 90.0)
 		assert.GreaterOrEqual(t, event.Lat, -90.0)
 		assert.LessOrEqual(t, event.Lon, 180.0)
@@ -91,4 +95,3 @@ This XML file does not appear to have any style information associated with it. 
 </eventParameters>
 </q:quakeml>
 `
-

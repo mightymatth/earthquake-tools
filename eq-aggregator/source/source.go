@@ -79,7 +79,7 @@ func (s source) handleWS(ctx context.Context, lt LocateTransformer) {
 	done := make(chan struct{})
 
 startConnWS:
-	log.Printf("[WS][%s] connecting!", s.Name)
+	log.Printf("[WS][%s] connecting...", s.Name)
 
 	sourceURL := lt.Locate().String()
 	conn, _, err := websocket.DefaultDialer.Dial(sourceURL, nil)
@@ -109,7 +109,7 @@ startConnWS:
 			}
 
 			for _, data := range events {
-				err = sendToWebhook(data)
+				err = s.sendToWebhook(data)
 				if err != nil {
 					log.Printf("[WS][%s] sending to webhook failed: %s", s.Name, err)
 					continue
@@ -146,7 +146,7 @@ startConnWS:
 	}
 }
 
-func sendToWebhook(data EarthquakeData) error {
+func (s source) sendToWebhook(data EarthquakeData) error {
 	b, err := json.Marshal(&data)
 	if err != nil {
 		return fmt.Errorf("cannot marshal earthquake data to JSON: %s", err)
@@ -157,13 +157,13 @@ func sendToWebhook(data EarthquakeData) error {
 		return fmt.Errorf("request failed: %s", err)
 	}
 
-	log.Printf("sent to webhook: %+v", data)
+	log.Printf("[WS][%s] sent to webhook: %+v", s.Name, data)
 
 	return nil
 }
 
 func (s source) handleREST(ctx context.Context, lt LocateTransformer) {
-	log.Printf("[REST][%s] connecting!", s.Name)
+	log.Printf("[REST][%s] connecting...", s.Name)
 
 	events, err := s.getEvents(ctx, lt)
 	if err != nil {
@@ -200,7 +200,7 @@ func (s source) handleREST(ctx context.Context, lt LocateTransformer) {
 		}
 
 		for _, event := range diffEvents {
-			err = sendToWebhook(event)
+			err = s.sendToWebhook(event)
 			if err != nil {
 				log.Printf("[REST][%s] sending to webhook failed: %s", s.Name, err)
 				continue
@@ -209,7 +209,7 @@ func (s source) handleREST(ctx context.Context, lt LocateTransformer) {
 	}
 }
 
-//difference returns the events in `a` that aren't in `b`.
+// difference returns the events in `a` that aren't in `b`.
 func difference(a, b []EarthquakeData) []EarthquakeData {
 	mb := make(map[string]struct{}, len(b))
 	for _, x := range b {

@@ -22,18 +22,18 @@ func NewFdsnWs(name, url string, sourceID ID) FdsnWs {
 }
 
 func (s FdsnWs) Locate() *url.URL {
-	lURL, err := url.Parse(s.Url)
+	u, err := url.Parse(s.Url)
 	if err != nil {
 		log.Fatalf("incorrect URL (%v) from source '%s': %v",
 			s.Url, s.Name, err)
 	}
 
-	q := lURL.Query()
+	q := u.Query()
 	q.Set("starttime", time.Now().Add(-36*time.Hour).Format("2006-01-02"))
 	q.Set("limit", fmt.Sprintf("%d", 10))
-	lURL.RawQuery = q.Encode()
+	u.RawQuery = q.Encode()
 
-	return lURL
+	return u
 }
 
 type fdsnwsTime time.Time
