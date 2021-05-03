@@ -34,7 +34,7 @@ The container will have the same source and webhook defaults. They can be change
 docker run -d --restart=always -e WEBHOOK=https:/custom.websocket.url eq-aggregator:latest
 ````
 
-If webhook is set on host machine, the container needs to be bind to host network. If using macOS, use `host.docker.internal` instead of `localhost`.
+If webhook is set on host machine, the container needs to be bind to host network. For macOS use `host.docker.internal` instead of `localhost`.
 
 ````shell
 docker run -d --restart=always --network host -e WEBHOOK=http://host.docker.internal:3300 eq-aggregator:latest
