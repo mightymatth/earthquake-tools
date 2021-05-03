@@ -157,7 +157,7 @@ func (s source) sendToWebhook(data EarthquakeData) error {
 		return fmt.Errorf("request failed: %s", err)
 	}
 
-	log.Printf("[WS][%s] sent to webhook: %+v", s.Name, data)
+	log.Printf("[%s][%s] sent to webhook: %+v", s.Method, s.Name, data)
 
 	return nil
 }
@@ -300,7 +300,7 @@ type Method string
 
 const (
 	REST      Method = "REST"
-	WEBSOCKET Method = "WEBSOCKET"
+	WEBSOCKET Method = "WS"
 )
 
 type ID string
