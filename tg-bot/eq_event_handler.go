@@ -93,8 +93,7 @@ func eventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
 	)
 
 	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(detailsURL),
-		tgbotapi.NewInlineKeyboardRow(mapsURL),
+		tgbotapi.NewInlineKeyboardRow(detailsURL, mapsURL),
 	)
 }
 
@@ -114,15 +113,15 @@ type eventReport struct {
 }
 
 func (e eventReport) String() string {
-	return fmt.Sprintf(
-		`
+	return fmt.Sprintf(`
+💥 <b>NEW EARTHQUAKE</b> 💥
 📶 Magnitude: <b>%.1f</b> %s
 🔻 Depth: %.0f km
 📍 Location: %s
 ⏳ Relative time: %s
 ⏱ UTC Time: <code>%s</code>
 ⏰ Local Time: <code>%s</code>
-🏣 Source: <code>%s</code>
+🏣 Source: <code>%s/%s</code>
 			`,
 		e.Mag,
 		e.MagType,
@@ -131,6 +130,6 @@ func (e eventReport) String() string {
 		humanize.RelTime(e.Time, e.TimeNow, "ago", "later"),
 		e.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
 		getLocationTime(e.Time, e.Lat, e.Lon),
-		e.SourceID,
+		e.SourceID, e.EventID,
 	)
 }
