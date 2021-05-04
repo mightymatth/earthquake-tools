@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mightymatth/earthquake-tools/tg-bot/entity"
 	"io"
 	"log"
 	"time"
@@ -19,20 +20,14 @@ func ParseEvent(body io.Reader) (event EarthquakeEvent, err error) {
 }
 
 type EarthquakeEvent struct {
-	Mag        float64   `json:"mag"`
-	MagType    string    `json:"magtype"`
-	Depth      float64   `json:"depth"`
-	Time       time.Time `json:"time"`
-	Lat        float64   `json:"lat"`
-	Lon        float64   `json:"lon"`
-	Location   string    `json:"location"`
-	DetailsURL string    `json:"details_url"`
-	SourceID   ID        `json:"source"`
-	EventID    string    `json:"event_id"`
+	Mag        float64         `json:"mag"`
+	MagType    string          `json:"magtype"`
+	Depth      float64         `json:"depth"`
+	Time       time.Time       `json:"time"`
+	Lat        float64         `json:"lat"`
+	Lon        float64         `json:"lon"`
+	Location   string          `json:"location"`
+	DetailsURL string          `json:"details_url"`
+	SourceID   entity.SourceID `json:"source"`
+	EventID    string          `json:"event_id"`
 }
-
-type ID string
-
-const (
-	EmscWs ID = "EMSC_WS"
-)

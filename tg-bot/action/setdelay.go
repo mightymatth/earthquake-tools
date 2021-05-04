@@ -49,7 +49,7 @@ e.g.: <code>2</code>, <code>60</code>
 
 func (a SetDelayAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
-		NewSubscription(sub.SubID, ResetInput).Encode())
+		NewSubscriptionAction(sub.SubID, ResetInput).Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(cancel),

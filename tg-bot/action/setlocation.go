@@ -43,7 +43,7 @@ To send the location, click <b>Send attachment</b> icon and click on <b>Send loc
 
 func (a SetLocationAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
-		NewSubscription(sub.SubID, ResetInput).Encode())
+		NewSubscriptionAction(sub.SubID, ResetInput).Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(cancel),

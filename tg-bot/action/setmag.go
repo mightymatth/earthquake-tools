@@ -45,7 +45,7 @@ e.g.: <code>4.3</code>, <code>5</code>
 
 func (a SetMagnitudeAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
 	cancel := tgbotapi.NewInlineKeyboardButtonData("❌ Cancel",
-		NewSubscription(sub.SubID, ResetInput).Encode())
+		NewSubscriptionAction(sub.SubID, ResetInput).Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(cancel),

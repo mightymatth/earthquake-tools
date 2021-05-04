@@ -29,7 +29,7 @@ docker run -d --network host --log-opt max-size=10m --log-opt max-file=5 -e MONG
 
 #### Name
 
-EMSC Events ⚠️
+Earthquake Events ⚠️
 
 #### Description
 

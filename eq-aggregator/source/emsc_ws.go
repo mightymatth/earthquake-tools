@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const EmscWsID ID = "EMSC_WS"
+const EmscWsID ID = "EMSCWS"
 
 type EmscWs struct {
 	source

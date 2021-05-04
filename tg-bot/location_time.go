@@ -3,12 +3,31 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/ugjka/go-tz.v2/tz"
 	"net/http"
 	"time"
 	_ "time/tzdata"
 )
 
 func LocationTime(timeUTC time.Time, lat, lon float64) (*time.Time, error) {
+	zone, err := tz.GetZone(tz.Point{
+		Lat: lat, Lon: lon,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get zone failed: %v", err)
+	}
+
+	loc, err := time.LoadLocation(zone[0])
+	if err != nil {
+		return nil, fmt.Errorf("load location failed: %v", err)
+	}
+
+	localTime := timeUTC.In(loc)
+
+	return &localTime, nil
+}
+
+func LocationTimeTimezoneDB(timeUTC time.Time, lat, lon float64) (*time.Time, error) {
 	resp, err := http.Get(fmt.Sprintf(
 		"http://api.timezonedb.com/v2.1/get-time-zone?by=position&format=json&lat=%f&lng=%f&time=%d&key=%s",
 		lat, lon, timeUTC.Unix(), getEnv("TIMEZONEDB_API_KEY", "")))

@@ -16,29 +16,36 @@ func EqEventHandler(bot *tgbotapi.BotAPI, s storage.Service) func(http.ResponseW
 		event, err := ParseEvent(r.Body)
 		if err != nil {
 			log.Printf("processing event failed: %v", err)
-		}
-
-		eventData := entity.EventData{
-			Magnitude: event.Mag,
-			Delay:     time.Now().Sub(event.Time).Minutes(),
-			Location: entity.Location{
-				Lat: event.Lat,
-				Lng: event.Lon,
-			},
-		}
-
-		chatIDs, err := s.GetEventSubscribers(eventData)
-		if err != nil {
-			log.Printf("cannot get event subscribers: %v\n", err)
-		}
-
-		if len(chatIDs) == 0 {
 			return
 		}
+		defer r.Body.Close()
 
-		eventReport := eventReport{event, time.Now()}
+		w.WriteHeader(http.StatusAccepted)
 
-		broadcast(eventReport, chatIDs, bot)
+		go func(event EarthquakeEvent, bot *tgbotapi.BotAPI, s storage.Service) {
+			eventData := entity.EventData{
+				Magnitude: event.Mag,
+				Delay:     time.Now().Sub(event.Time).Minutes(),
+				Location: entity.Location{
+					Lat: event.Lat,
+					Lng: event.Lon,
+				},
+				Source: event.SourceID,
+			}
+
+			chatIDs, err := s.GetEventSubscribers(eventData)
+			if err != nil {
+				log.Printf("cannot get event subscribers: %v\n", err)
+			}
+
+			if len(chatIDs) == 0 {
+				return
+			}
+
+			eventReport := eventReport{event, time.Now()}
+
+			broadcast(eventReport, chatIDs, bot)
+		}(event, bot, s)
 	}
 }
 
@@ -80,7 +87,7 @@ func broadcast(eventReport eventReport, chatIDs []int64, bot *tgbotapi.BotAPI) {
 }
 
 func eventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
-	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details & Updates", event.DetailsURL)
+	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details 📰", event.DetailsURL)
 	mapsURL := tgbotapi.NewInlineKeyboardButtonURL("Location 📍",
 		fmt.Sprintf("https://www.google.com/maps/place/%f,%f", event.Lat, event.Lon),
 	)
@@ -100,12 +107,6 @@ func getLocationTime(timeUTC time.Time, lat, lon float64) string {
 
 	return localTime.Format("Mon, 2 Jan 2006 15:04:05 MST")
 }
-
-type SourceType string
-
-const (
-	emsc SourceType = "EMSC-RTS"
-)
 
 type eventReport struct {
 	EarthquakeEvent

@@ -9,4 +9,5 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
 	go.mongodb.org/mongo-driver v1.4.4
+	gopkg.in/ugjka/go-tz.v2 v2.0.12
 )

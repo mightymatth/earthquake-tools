@@ -14,7 +14,7 @@ type SubscriptionAction struct {
 
 const Sub Cmd = "SUB"
 
-func NewSubscription(subID string, reset ResetInputType) SubscriptionAction {
+func NewSubscriptionAction(subID string, reset ResetInputType) SubscriptionAction {
 	return SubscriptionAction{Action{
 		Cmd:    Sub,
 		Params: Params{P1: subID, P2: string(reset)},
@@ -31,7 +31,7 @@ func (a SubscriptionAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message,
 	}
 
 	message := editedMessageConfig(msg.Chat.ID, msg.MessageID, a.text(sub), a.inlineButtons(sub))
-	bot.Send(message)
+	_, _ = bot.Send(message)
 }
 
 func (a SubscriptionAction) text(sub *entity.Subscription) string {
@@ -46,6 +46,8 @@ func (a SubscriptionAction) text(sub *entity.Subscription) string {
 }
 
 func (a SubscriptionAction) inlineButtons(sub *entity.Subscription) *tgbotapi.InlineKeyboardMarkup {
+	name := tgbotapi.NewInlineKeyboardButtonData("📖 Name", NewSetNameAction(sub.SubID).Encode())
+	srcs := tgbotapi.NewInlineKeyboardButtonData("ℹ️ Sources", NewListSourcesAction(sub.SubID).Encode())
 	magnitude := tgbotapi.NewInlineKeyboardButtonData("📶 Magnitude", NewSetMagnitudeAction(sub.SubID).Encode())
 	delay := tgbotapi.NewInlineKeyboardButtonData("⏳ Delay", NewSetDelayAction(sub.SubID).Encode())
 	location := tgbotapi.NewInlineKeyboardButtonData("📍️ Location", NewSetLocationAction(sub.SubID).Encode())
@@ -56,6 +58,7 @@ func (a SubscriptionAction) inlineButtons(sub *entity.Subscription) *tgbotapi.In
 		NewDeleteSubscriptionAction(a.Params.P1, "").Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(name, srcs),
 		tgbotapi.NewInlineKeyboardRow(magnitude, delay),
 		tgbotapi.NewInlineKeyboardRow(location, radius),
 		tgbotapi.NewInlineKeyboardRow(home, deleteSub),
@@ -70,7 +73,7 @@ func ShowSubscription(chatID int64, subID string, bot *tgbotapi.BotAPI, s storag
 		return
 	}
 
-	subAction := NewSubscription(subID, "")
+	subAction := NewSubscriptionAction(subID, "")
 	msg := tgbotapi.MessageConfig{
 		BaseChat: tgbotapi.BaseChat{
 			ChatID:      chatID,

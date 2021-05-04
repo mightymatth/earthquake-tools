@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const EmscRestID ID = "EMSC_REST"
+const EmscRestID ID = "EMSC"
 
 type EmscRest struct {
 	FdsnWs

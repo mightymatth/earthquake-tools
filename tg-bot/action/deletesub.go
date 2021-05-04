@@ -54,7 +54,7 @@ func (a DeleteSubscriptionAction) inlineButtons() *tgbotapi.InlineKeyboardMarkup
 	yes := tgbotapi.NewInlineKeyboardButtonData("✅ Yes",
 		NewDeleteSubscriptionAction(a.Action.Params.P1, ConfirmDeleteSub).Encode())
 	no := tgbotapi.NewInlineKeyboardButtonData("❌ No",
-		NewSubscription(a.Action.Params.P1, "").Encode())
+		NewSubscriptionAction(a.Action.Params.P1, "").Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(yes, no),
