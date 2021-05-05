@@ -103,34 +103,53 @@ type Source struct {
 func createSources() {
 	sources = []Source{
 		{
-			Name:        "EMSC",
-			Description: "EMSC data feed.",
-			SourceID:    entity.EMSC,
+			Name: "EMSC",
+			Description: `
+<a href="https://www.emsc-csem.org/">EMSC</a> data <a href="https://www.seismicportal.eu/fdsn-wsevent.html">feed</a> based on <a href="https://www.fdsn.org/webservices/">FDSN Web Service</a> event specification.
+The service reports almost all earthquakes from Europe and Mediterranean region, and also more significant ones from the entire world.
+`,
+			SourceID: entity.EMSC,
 		},
 		{
-			Name:        "EMSC/ws",
-			Description: "EMSC data feed via WebSocket.",
-			SourceID:    entity.EMSCWS,
+			Name: "EMSC/ws",
+			Description: `
+<a href="https://www.emsc-csem.org/">EMSC</a> data feed connected to <a href="https://www.seismicportal.eu/realtime.html">(near) Realtime Notification using Websocket</a>.
+The service reports almost all earthquakes from Europe and Mediterranean region, and also more significant ones from the entire world. 
+The reports are almost the same as the EMSC service based on FDSN event service. The difference is that it's theoretically a few seconds faster, but it has a little bit less availability under heavy load when bigger earthquakes occur. 
+`,
+			SourceID: entity.EMSCWS,
 		},
 		{
-			Name:        "USGS",
-			Description: "USGS data feed.",
-			SourceID:    entity.USGS,
+			Name: "USGS",
+			Description: `
+<a href="https://earthquake.usgs.gov/">USGS</a> data <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson">feed</a>.
+The service reports almost all earthquakes from North America. It is reliable and fast source, so is highly recommended to use.
+`,
+			SourceID: entity.USGS,
 		},
 		{
-			Name:        "IRIS",
-			Description: "IRIS data feed.",
-			SourceID:    entity.IRIS,
+			Name: "IRIS",
+			Description: `
+<a href="https://www.iris.edu/hq/">IRIS</a> data <a href="https://service.iris.edu/fdsnws/">feed</a> based on <a href="https://www.fdsn.org/webservices/">FDSN Web Service</a> event specification.
+The service reports almost all earthquakes from North America. It is reliable and fast source, so is highly recommended to use. The reports have very similar content and response time as USGS source.
+`,
+			SourceID: entity.IRIS,
 		},
 		{
-			Name:        "USPBR",
-			Description: "USPBR data feed.",
-			SourceID:    entity.USPBR,
+			Name: "USPBR",
+			Description: `
+<a href="http://www.moho.iag.usp.br/">Centro de sismologia USP</a> data <a href="http://www.moho.iag.usp.br/rq/">feed</a> based on <a href="https://www.fdsn.org/webservices/">FDSN Web Service</a> event specification.
+The service reports earthquakes mainly from South America. 
+`,
+			SourceID: entity.USPBR,
 		},
 		{
-			Name:        "GEOFON",
-			Description: "GEOFON data feed.",
-			SourceID:    entity.GEOFON,
+			Name: "GEOFON",
+			Description: `
+<a href="https://geofon.gfz-potsdam.de/">GEOFON</a> data <a href="http://geofon.gfz-potsdam.de/fdsnws/">feed</a> based on <a href="https://www.fdsn.org/webservices/">FDSN Web Service</a> event specification.
+The service reports only significant earthquakes from the entire world. 
+`,
+			SourceID: entity.GEOFON,
 		},
 	}
 
