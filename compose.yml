@@ -18,7 +18,7 @@ services:
   eq-aggregator:
     build: ./eq-aggregator
     environment:
-      - WEBHOOK=http://eq-tg-bot:3000
+      - WEBHOOK=http://eq-tg-bot:3300
     restart: always
     logging:
       driver: "json-file"
