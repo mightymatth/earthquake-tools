@@ -64,7 +64,7 @@ func ShowSetName(chatID int64, subID string, bot *tgbotapi.BotAPI, s storage.Ser
 			ChatID:      chatID,
 			ReplyMarkup: setNameAction.inlineButtons(sub),
 		},
-		Text: setNameAction.text(),
+		Text:                  setNameAction.text(),
 		ParseMode:             tgbotapi.ModeHTML,
 		DisableWebPagePreview: true,
 	}

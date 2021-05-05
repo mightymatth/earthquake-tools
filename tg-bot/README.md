@@ -22,7 +22,7 @@ This command will:
 docker build -t eq-tg-bot .
 
 # run docker container
-docker run -d --network host --log-opt max-size=10m --log-opt max-file=5 -e MONGO_URI="mongodb+srv://.../?retryWrites=true&w=majority" -e TELEGRAM_BOT_TOKEN="14...w" -e TIMEZONEDB_API_KEY="V...H" -e BOT_ENV=prod --restart=always eq-tg-bot:latest
+docker run -d --network host --log-opt max-size=10m --log-opt max-file=5 -e MONGO_URI="mongodb+srv://.../?retryWrites=true&w=majority" -e TELEGRAM_BOT_TOKEN="14...w" -e BOT_ENV=prod --restart=always eq-tg-bot:latest
 ```
 
 ### Bot Father configuration
