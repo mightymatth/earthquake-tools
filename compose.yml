@@ -1,9 +1,9 @@
 version: "3.8"
 services:
-  eq-tg-bot:
+  tg-bot:
     build: ./tg-bot
     depends_on:
-      - eq-aggregator
+      - aggregator
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - MONGO_URI=${MONGO_URI}
@@ -15,10 +15,10 @@ services:
       options:
         max-size: "2m"
         max-file: "10"
-  eq-aggregator:
+  aggregator:
     build: ./eq-aggregator
     environment:
-      - WEBHOOK=http://eq-tg-bot:3300
+      - WEBHOOK=http://tg-bot:3300
     restart: always
     logging:
       driver: "json-file"
