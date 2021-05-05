@@ -18,6 +18,7 @@ type Cmd string
 type Params struct {
 	P1 string
 	P2 string
+	P3 string
 }
 
 type ResetInputType string
@@ -43,16 +44,16 @@ func (a Action) ToAction() Action {
 }
 
 func (a Action) Encode() string {
-	return fmt.Sprintf("%s:%s:%s", a.Cmd, a.Params.P1, a.Params.P2)
+	return fmt.Sprintf("%s:%s:%s:%s", a.Cmd, a.Params.P1, a.Params.P2, a.Params.P3)
 }
 
 func Decode(data string) (Actionable, error) {
 	parts := strings.Split(data, ":")
-	if len(parts) != 3 {
+	if len(parts) != 4 {
 		return nil, errors.Errorf("empty or data format: '%v'", data)
 	}
 
-	cmd, p1, p2 := parts[0], parts[1], parts[2]
+	cmd, p1, p2, p3 := parts[0], parts[1], parts[2], parts[3]
 
 	switch Cmd(cmd) {
 	case Home:
@@ -60,11 +61,17 @@ func Decode(data string) (Actionable, error) {
 	case Subs:
 		return NewSubscriptionsAction(ResetInputType(p1)), nil
 	case Sub:
-		return NewSubscription(p1, ResetInputType(p2)), nil
+		return NewSubscriptionAction(p1, ResetInputType(p2)), nil
 	case CreateSub:
 		return NewCreateSubscriptionAction(), nil
 	case DeleteSub:
 		return NewDeleteSubscriptionAction(p1, p2), nil
+	case SetName:
+		return NewSetNameAction(p1), nil
+	case ListSources:
+		return NewListSourcesAction(p1), nil
+	case SetSource:
+		return NewSetSourceAction(p1, p2, p3), nil
 	case SetMagnitude:
 		return NewSetMagnitudeAction(p1), nil
 	case SetDelay:

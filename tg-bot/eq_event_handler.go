@@ -16,33 +16,36 @@ func EqEventHandler(bot *tgbotapi.BotAPI, s storage.Service) func(http.ResponseW
 		event, err := ParseEvent(r.Body)
 		if err != nil {
 			log.Printf("processing event failed: %v", err)
-		}
-
-		if event.Action != "create" {
 			return
 		}
+		defer r.Body.Close()
 
-		eventData := entity.EventData{
-			Magnitude: event.Data.Properties.Mag,
-			Delay:     time.Now().Sub(event.Data.Properties.Time).Minutes(),
-			Location: entity.Location{
-				Lat: event.Data.Properties.Lat,
-				Lng: event.Data.Properties.Lon,
-			},
-		}
+		w.WriteHeader(http.StatusAccepted)
 
-		chatIDs, err := s.GetEventSubscribers(eventData)
-		if err != nil {
-			log.Printf("cannot get event subscribers: %v\n", err)
-		}
+		go func(event EarthquakeEvent, bot *tgbotapi.BotAPI, s storage.Service) {
+			eventData := entity.EventData{
+				Magnitude: event.Mag,
+				Delay:     time.Now().Sub(event.Time).Minutes(),
+				Location: entity.Location{
+					Lat: event.Lat,
+					Lng: event.Lon,
+				},
+				Source: event.SourceID,
+			}
 
-		if len(chatIDs) == 0 {
-			return
-		}
+			chatIDs, err := s.GetEventSubscribers(eventData)
+			if err != nil {
+				log.Printf("cannot get event subscribers: %v\n", err)
+			}
 
-		eventReport := eventReport{event, time.Now()}
+			if len(chatIDs) == 0 {
+				return
+			}
 
-		broadcast(eventReport, chatIDs, bot)
+			eventReport := eventReport{event, time.Now()}
+
+			broadcast(eventReport, chatIDs, bot)
+		}(event, bot, s)
 	}
 }
 
@@ -84,18 +87,13 @@ func broadcast(eventReport eventReport, chatIDs []int64, bot *tgbotapi.BotAPI) {
 }
 
 func eventButtons(event EarthquakeEvent) tgbotapi.InlineKeyboardMarkup {
-	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details & Updates",
-		fmt.Sprintf("https://www.seismicportal.eu/eventdetails.html?unid=%s", event.Data.ID),
-	)
+	detailsURL := tgbotapi.NewInlineKeyboardButtonURL("Details 📰", event.DetailsURL)
 	mapsURL := tgbotapi.NewInlineKeyboardButtonURL("Location 📍",
-		fmt.Sprintf("http://www.google.com/maps/place/%f,%f",
-			event.Data.Properties.Lat,
-			event.Data.Properties.Lon),
+		fmt.Sprintf("https://www.google.com/maps/place/%f,%f", event.Lat, event.Lon),
 	)
 
 	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(detailsURL),
-		tgbotapi.NewInlineKeyboardRow(mapsURL),
+		tgbotapi.NewInlineKeyboardRow(detailsURL, mapsURL),
 	)
 }
 
@@ -109,50 +107,29 @@ func getLocationTime(timeUTC time.Time, lat, lon float64) string {
 	return localTime.Format("Mon, 2 Jan 2006 15:04:05 MST")
 }
 
-func sourceLinkHTML(sourceType, ID string) string {
-	switch SourceType(sourceType) {
-	case emsc:
-		return fmt.Sprintf(
-			`<a href="https://www.emsc-csem.org/Earthquake/earthquake.php?id=%s">%s/%s</a>`,
-			ID, sourceType, ID)
-	default:
-		return fmt.Sprintf(`<code>%s/%s</code>`, sourceType, ID)
-	}
-}
-
-type SourceType string
-
-const (
-	emsc SourceType = "EMSC-RTS"
-)
-
 type eventReport struct {
 	EarthquakeEvent
 	TimeNow time.Time
 }
 
 func (e eventReport) String() string {
-	return fmt.Sprintf(
-		`
+	return fmt.Sprintf(`
+💥 <b>NEW EARTHQUAKE</b> 💥
 📶 Magnitude: <b>%.1f</b> %s
 🔻 Depth: %.0f km
 📍 Location: %s
 ⏳ Relative time: %s
 ⏱ UTC Time: <code>%s</code>
 ⏰ Local Time: <code>%s</code>
-🏣 Source/ID: %s
+🏣 Source: <code>%s/%s</code>
 			`,
-		e.Data.Properties.Mag,
-		e.Data.Properties.MagType,
-		e.Data.Properties.Depth,
-		e.Data.Properties.FlynnRegion,
-		humanize.RelTime(e.Data.Properties.Time, e.TimeNow, "ago", "later"),
-		e.Data.Properties.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
-		getLocationTime(
-			e.Data.Properties.Time,
-			e.Data.Properties.Lat,
-			e.Data.Properties.Lon,
-		),
-		sourceLinkHTML(e.Data.Properties.SourceCatalog, e.Data.Properties.SourceID),
+		e.Mag,
+		e.MagType,
+		e.Depth,
+		e.Location,
+		humanize.RelTime(e.Time, e.TimeNow, "ago", "later"),
+		e.Time.Format("Mon, 2 Jan 2006 15:04:05 MST"),
+		getLocationTime(e.Time, e.Lat, e.Lon),
+		e.SourceID, e.EventID,
 	)
 }

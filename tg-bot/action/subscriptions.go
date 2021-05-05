@@ -61,7 +61,7 @@ func (a SubscriptionsAction) subscriptionRows(
 	tmpRow := make([]tgbotapi.InlineKeyboardButton, 0, iPerRow)
 	for i := 0; i < len(subs); i++ {
 		btn := tgbotapi.NewInlineKeyboardButtonData(subs[i].Name,
-			NewSubscription(subs[i].SubID, "").Encode())
+			NewSubscriptionAction(subs[i].SubID, "").Encode())
 		tmpRow = append(tmpRow, btn)
 		if len(tmpRow) == iPerRow {
 			rows = append(rows, tmpRow)

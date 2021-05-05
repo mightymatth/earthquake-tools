@@ -151,6 +151,7 @@ func (s *Storage) GetSubscription(subHexID string) (*entity.Subscription, error)
 		Delay:    subDB.Delay,
 		Location: subDB.Location.toLocation(),
 		Radius:   subDB.Radius,
+		Sources:  entity.ToSources(subDB.Sources),
 	}
 
 	return &sub, nil
@@ -158,11 +159,12 @@ func (s *Storage) GetSubscription(subHexID string) (*entity.Subscription, error)
 
 func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscription, error) {
 	subCreate := Subscription{
-		ChatID: chatID,
-		Name:   name,
-		MinMag: 1.5,
-		Delay:  15,
-		Radius: 140,
+		ChatID:  chatID,
+		Name:    name,
+		MinMag:  1.5,
+		Delay:   15,
+		Radius:  140,
+		Sources: []string{string(entity.EMSC)},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -187,6 +189,7 @@ func (s *Storage) CreateSubscription(chatID int64, name string) (*entity.Subscri
 		Delay:    newSubDB.Delay,
 		Location: newSubDB.Location.toLocation(),
 		Radius:   newSubDB.Radius,
+		Sources:  entity.ToSources(newSubDB.Sources),
 	}
 
 	return &newSub, nil
@@ -206,6 +209,7 @@ func (s *Storage) UpdateSubscription(
 		Delay:    subUpdate.Delay,
 		Location: toPoint(subUpdate.Location),
 		Radius:   subUpdate.Radius,
+		Sources:  entity.SourceIDs(subUpdate.Sources).ToStrings(),
 	}
 
 	if subUpdateDB.Location != nil || subUpdateDB.Radius > 0 {
@@ -236,6 +240,7 @@ func (s *Storage) UpdateSubscription(
 		Delay:    newSubDB.Delay,
 		Location: newSubDB.Location.toLocation(),
 		Radius:   newSubDB.Radius,
+		Sources:  entity.ToSources(newSubDB.Sources),
 	}
 
 	return &newSub, nil
@@ -285,6 +290,7 @@ func (s *Storage) GetSubscriptions(chatID int64) (subs []entity.Subscription) {
 			Delay:    subDB.Delay,
 			Location: subDB.Location.toLocation(),
 			Radius:   subDB.Radius,
+			Sources:  entity.ToSources(subDB.Sources),
 		}
 
 		subs = append(subs, sub)
@@ -304,6 +310,7 @@ func (s *Storage) GetEventSubscribers(eventData entity.EventData) (chatIDs []int
 		}}}},
 		{"min_mag", bson.M{"$lte": eventData.Magnitude}},
 		{"delay", bson.M{"$gte": eventData.Delay}},
+		{"sources", eventData.Source},
 	}
 
 	projection := &options.FindOptions{

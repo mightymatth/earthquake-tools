@@ -22,7 +22,7 @@ func (a HomeAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s stora
 
 func (a HomeAction) text() string {
 	return `
-Welcome to <i>EMSC Events ⚠️</i> Bot
+Welcome to <i>Earthquake Events ⚠️</i> Bot
 
 It makes you able to receive notifications of recent earthquakes by making subscriptions configured with parameters such as magnitude, location, and observing radius.
 

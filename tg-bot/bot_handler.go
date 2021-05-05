@@ -8,6 +8,10 @@ import (
 )
 
 func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service) {
+	if update.ChannelPost != nil {
+		update.Message = update.ChannelPost
+	}
+
 	if update.CallbackQuery != nil {
 		a, err := action.New(update.CallbackQuery.Data)
 		if err != nil {

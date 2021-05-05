@@ -2,7 +2,7 @@
 
 ## Local development
 
-Setup `ws-middleware` that will send events to `localhost:3300` and run the next
+Setup `eq-aggregator` that will send events to `localhost:3300` and run the next
 script:
 
 ```shell
@@ -22,14 +22,14 @@ This command will:
 docker build -t eq-tg-bot .
 
 # run docker container
-docker run -d --network host --log-opt max-size=10m --log-opt max-file=5 -e MONGO_URI="mongodb+srv://.../?retryWrites=true&w=majority" -e TELEGRAM_BOT_TOKEN="14...w" -e TIMEZONEDB_API_KEY="V...H" -e BOT_ENV=prod --restart=always eq-tg-bot:latest
+docker run -d --network host --log-opt max-size=10m --log-opt max-file=5 -e MONGO_URI="mongodb+srv://.../?retryWrites=true&w=majority" -e TELEGRAM_BOT_TOKEN="14...w" -e BOT_ENV=prod --restart=always eq-tg-bot:latest
 ```
 
 ### Bot Father configuration
 
 #### Name
 
-EMSC Events ⚠️
+Earthquake Events ⚠️
 
 #### Description
 

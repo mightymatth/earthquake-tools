@@ -6,7 +6,7 @@ import (
 )
 
 func TestEncodeDecode(t *testing.T) {
-	a := action.NewSubscription("123", action.ResetInput)
+	a := action.NewSubscriptionAction("123", action.ResetInput)
 	e := a.Encode()
 	_, err := action.Decode(e)
 	if err != nil {

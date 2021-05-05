@@ -11,6 +11,7 @@ type Subscription struct {
 	Location    *Point             `bson:"location,omitempty"`
 	Radius      float64            `bson:"radius,omitempty"`
 	ObserveArea *ObserveArea       `bson:"observe_area,omitempty"`
+	Sources     []string           `bson:"sources,omitempty"`
 }
 
 type SubscriptionUpdate struct {
@@ -20,6 +21,7 @@ type SubscriptionUpdate struct {
 	Location    *Point       `bson:"location,omitempty"`
 	Radius      float64      `bson:"radius,omitempty"`
 	ObserveArea *ObserveArea `bson:"observe_area,omitempty"`
+	Sources     []string     `bson:"sources,omitempty"`
 }
 
 //Point represents a GeoJSON type
