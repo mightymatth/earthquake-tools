@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/dgraph-io/ristretto"
 	"github.com/gorilla/websocket"
+	"github.com/mightymatth/earthquake-tools/eq-aggregator/cache"
 	"io"
 	"log"
 	"net/http"
@@ -20,20 +20,18 @@ var webhook = flag.String("webhook",
 	"http://localhost:3300",
 	"webhook address for events")
 
-var cache *ristretto.Cache
+var sourceCache cache.Cacher
 
 func init() {
-	c, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 1e7,     // number of keys to track frequency of (10M).
-		MaxCost:     1 << 30, // maximum cost of cache (1GB).
-		BufferItems: 64,      // number of keys per Get buffer.
-	})
+	c := cache.NewInMemory()
 
-	if err != nil {
-		panic(err)
-	}
+	// Change to Ristretto if needed.
+	//c, err := cache.NewRistretto()
+	//if err != nil {
+	//	panic(err)
+	//}
 
-	cache = c
+	sourceCache = c
 }
 
 type source struct {
@@ -248,7 +246,7 @@ func (s source) getEvents(ctx context.Context, lt LocateTransformer) ([]Earthqua
 }
 
 func (s source) setEventsToCache(events []EarthquakeData) error {
-	success := cache.Set(s.getHashKey(), events, 0)
+	success := sourceCache.Set(s.getHashKey(), events)
 	if !success {
 		return fmt.Errorf("set to cache failed")
 	}
@@ -257,15 +255,9 @@ func (s source) setEventsToCache(events []EarthquakeData) error {
 }
 
 func (s source) getEventsFromCache() ([]EarthquakeData, error) {
-	value, found := cache.Get(s.getHashKey())
+	value, found := sourceCache.Get(s.getHashKey())
 	if !found {
-		// wait for value to pass through buffers
-		time.Sleep(10 * time.Millisecond)
-
-		value, found = cache.Get(s.getHashKey())
-		if !found {
-			return nil, fmt.Errorf("events not found for this key")
-		}
+		return nil, fmt.Errorf("events not found for this key")
 	}
 
 	events, ok := value.([]EarthquakeData)
