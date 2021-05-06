@@ -8,6 +8,7 @@ import (
 	"github.com/mightymatth/earthquake-tools/tg-bot/storage/mongo"
 	"log"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -48,6 +49,10 @@ func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) error {
 	if err != nil {
 		return fmt.Errorf("cannot get updates: %v", err)
 	}
+
+	// Clearing old messages
+	time.Sleep(500 * time.Millisecond)
+	updates.Clear()
 
 	for update := range updates {
 		botHandler(update, bot, s)

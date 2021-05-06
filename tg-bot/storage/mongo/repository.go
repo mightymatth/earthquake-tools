@@ -304,12 +304,15 @@ func (s *Storage) GetEventSubscribers(eventData entity.EventData) (chatIDs []int
 	defer cancel()
 
 	filter := bson.D{
-		{"observe_area", bson.M{"$geoIntersects": bson.M{"$geometry": bson.D{
-			{"type", "Point"},
-			{"coordinates", toPoint(&eventData.Location).ToArray()},
-		}}}},
 		{"min_mag", bson.M{"$lte": eventData.Magnitude}},
 		{"delay", bson.M{"$gte": eventData.Delay}},
+		{"$or", bson.A{
+			bson.D{{"radius", 0}},
+			bson.D{{"observe_area", bson.M{"$geoIntersects": bson.M{"$geometry": bson.D{
+				{"type", "Point"},
+				{"coordinates", toPoint(&eventData.Location).ToArray()},
+			}}}}}},
+		},
 		{"sources", eventData.Source},
 	}
 

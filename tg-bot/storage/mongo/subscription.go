@@ -19,7 +19,7 @@ type SubscriptionUpdate struct {
 	MinMag      float64      `bson:"min_mag,omitempty"`
 	Delay       float64      `bson:"delay,omitempty"`
 	Location    *Point       `bson:"location,omitempty"`
-	Radius      float64      `bson:"radius,omitempty"`
+	Radius      float64      `bson:"radius"`
 	ObserveArea *ObserveArea `bson:"observe_area,omitempty"`
 	Sources     []string     `bson:"sources,omitempty"`
 }

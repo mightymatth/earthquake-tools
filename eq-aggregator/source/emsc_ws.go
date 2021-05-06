@@ -16,7 +16,7 @@ type EmscWs struct {
 
 func NewEmscWs() EmscWs {
 	return EmscWs{source{
-		Name: "EMSC WS", Url: "wss://www.seismicportal.eu/standing_order/websocket",
+		Name: "EMSCWS", Url: "wss://www.seismicportal.eu/standing_order/websocket",
 		Method: WEBSOCKET, SourceID: EmscWsID,
 	}}
 }

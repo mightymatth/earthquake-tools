@@ -2,8 +2,6 @@ version: "3.8"
 services:
   tg-bot:
     build: ./tg-bot
-    depends_on:
-      - aggregator
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - MONGO_URI=${MONGO_URI}

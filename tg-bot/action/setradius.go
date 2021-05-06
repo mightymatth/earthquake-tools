@@ -40,6 +40,7 @@ func (a SetRadiusAction) text() string {
 	return `
 Enter maximum earthquake location radius to receive an alert.
 The unit is kilometer (km).
+If <code>0</code> (zero) value is provided, it will subscribe to the entire world.
 e.g.: <code>100.5</code>, <code>350</code>
 `
 }
@@ -102,14 +103,13 @@ func (a SetRadiusAction) processInputValue(text string) (float64, error) {
 		return 0, fmt.Errorf("cannot parse text to number")
 	}
 
-	switch {
-	case radius < 1, radius > 2000:
+	if !(radius == 0 || radius >= 1 && radius <= 2000) {
 		return 0, fmt.Errorf("invalid range")
-	default:
-		return radius, nil
 	}
+
+	return radius, nil
 }
 
 func (a SetRadiusAction) WrongInput() string {
-	return "Wrong input. A whole or decimal number expected; in range [1, 2000]"
+	return "Wrong input. A whole or decimal number expected; in range [0] ∪ [1, 2000]"
 }

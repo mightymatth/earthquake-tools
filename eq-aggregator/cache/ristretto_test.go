@@ -20,4 +20,3 @@ func TestRistretto_SetGet(t *testing.T) {
 	assert.True(t, found)
 	assert.Equal(t, value, v)
 }
-
