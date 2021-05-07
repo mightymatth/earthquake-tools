@@ -44,19 +44,20 @@ type source struct {
 func (s source) Listen(ctx context.Context, lt LocateTransformer) {
 	switch s.Method {
 	case WEBSOCKET:
-		s.handleWS(ctx, lt)
+		s.listenWS(ctx, lt)
 	case REST:
-		s.handleREST(ctx, lt)
+		s.listenREST(ctx, lt)
 	}
 }
 
 func (s source) Locate() *url.URL {
-	lURL, err := url.Parse(s.Url)
+	u, err := url.Parse(s.Url)
 	if err != nil {
 		log.Fatalf("incorrect URL (%v) from source '%s': %v",
 			s.Url, s.Name, err)
 	}
-	return lURL
+
+	return u
 }
 
 type Transformer interface {
@@ -72,18 +73,18 @@ type LocateTransformer interface {
 	Locator
 }
 
-func (s source) handleWS(ctx context.Context, lt LocateTransformer) {
+func (s source) listenWS(ctx context.Context, lt LocateTransformer) {
 	restart := make(chan struct{})
-	done := make(chan struct{})
 
-startConnWS:
+start:
 	log.Printf("[WS][%s] connecting...", s.Name)
 
-	sourceURL := lt.Locate().String()
-	conn, _, err := websocket.DefaultDialer.Dial(sourceURL, nil)
+	u := lt.Locate().String()
+	conn, _, err := websocket.DefaultDialer.Dial(u, nil)
 	if err != nil {
-		defer close(done)
-		log.Fatalf("[WS][%s] websocket dial error: %s", s.Name, err)
+		log.Printf("[WS][%s] websocket dial error: %s", s.Name, err)
+		time.Sleep(5 * time.Second)
+		goto start
 	}
 	log.Printf("[WS][%s] connected!", s.Name)
 
@@ -121,11 +122,10 @@ startConnWS:
 		case <-restart:
 			log.Printf("[WS][%s] restarting!", s.Name)
 			time.Sleep(200 * time.Millisecond) // avoid spam
-			goto startConnWS
-		case <-done:
-			return
+			goto start
 		case <-ctx.Done():
-			// Closing a websocket connection in a clean way.
+			// Cleanly close the connection by sending a close message and then
+			// waiting (with timeout) for the server to close the connection.
 			err := conn.WriteMessage(
 				websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
@@ -135,10 +135,7 @@ startConnWS:
 				return
 			}
 
-			select {
-			case <-done:
-			case <-time.After(time.Second):
-			}
+			<-time.After(time.Second)
 			return
 		}
 	}
@@ -160,17 +157,22 @@ func (s source) sendToWebhook(data EarthquakeData) error {
 	return nil
 }
 
-func (s source) handleREST(ctx context.Context, lt LocateTransformer) {
+func (s source) listenREST(ctx context.Context, lt LocateTransformer) {
+start:
 	log.Printf("[REST][%s] connecting...", s.Name)
 
 	events, err := s.getEvents(ctx, lt)
 	if err != nil {
-		log.Fatalf("[REST][%s] initial fetch failed: %s", s.Name, err)
+		log.Printf("[REST][%s] initial fetch failed: %s", s.Name, err)
+		time.Sleep(5 * time.Second)
+		goto start
 	}
 
 	err = s.setEventsToCache(events)
 	if err != nil {
-		log.Fatalf("[REST][%s] initial set to cache failed: %s", s.Name, err)
+		log.Printf("[REST][%s] initial set to cache failed: %s", s.Name, err)
+		time.Sleep(5 * time.Second)
+		goto start
 	}
 
 	log.Printf("[REST][%s] connected!", s.Name)
@@ -179,13 +181,14 @@ func (s source) handleREST(ctx context.Context, lt LocateTransformer) {
 
 		events, err := s.getEvents(ctx, lt)
 		if err != nil {
-			log.Printf("[REST][%s] initial fetch failed: %s", s.Name, err)
+			log.Printf("[REST][%s] fetch failed: %s", s.Name, err)
 			continue
 		}
 
 		cacheEvents, err := s.getEventsFromCache()
 		if err != nil {
-			log.Fatalf("[REST][%s] fetch from cache failed: %s", s.Name, err)
+			log.Printf("[REST][%s] fetch from cache failed: %s", s.Name, err)
+			continue
 		}
 
 		diffEvents := difference(events, cacheEvents)
@@ -193,7 +196,8 @@ func (s source) handleREST(ctx context.Context, lt LocateTransformer) {
 		if len(diffEvents) > 0 {
 			err = s.setEventsToCache(events)
 			if err != nil {
-				log.Fatalf("[REST][%s] set to cache failed: %s", s.Name, err)
+				log.Printf("[REST][%s] set to cache failed: %s", s.Name, err)
+				continue
 			}
 		}
 
