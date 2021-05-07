@@ -30,7 +30,7 @@ func (c *Ristretto) Set(key, value interface{}) bool {
 
 func NewRistretto() (*Ristretto, error) {
 	c, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: (512 * 16) * 10, // number of keys to track frequency of (10M).
+		NumCounters: (512 * 16) * 10, // number of keys to track frequency of.
 		MaxCost:     512 * 16,        // [max cost of single item] * [max items]
 		BufferItems: 64,              // number of keys per Get buffer.
 	})
