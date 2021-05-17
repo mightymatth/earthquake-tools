@@ -30,6 +30,10 @@ func (s Iris) Transform(r io.Reader) ([]EarthquakeData, error) {
 		return nil, fmt.Errorf("cannot read from buffer: %v", err)
 	}
 
+	if buf.Len() <= 0 {
+		return []EarthquakeData{}, nil
+	}
+
 	var eventsRes IrisResponse
 	err = xml.Unmarshal(buf.Bytes(), &eventsRes)
 	if err != nil {

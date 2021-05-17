@@ -46,6 +46,10 @@ func (s EmscRest) Transform(r io.Reader) ([]EarthquakeData, error) {
 		return nil, fmt.Errorf("cannot read from buffer: %v", err)
 	}
 
+	if buf.Len() <= 0 {
+		return []EarthquakeData{}, nil
+	}
+
 	var eventsRes EmscRestResponse
 	err = json.Unmarshal(buf.Bytes(), &eventsRes)
 	if err != nil {
