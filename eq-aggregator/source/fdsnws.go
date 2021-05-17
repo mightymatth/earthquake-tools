@@ -29,7 +29,7 @@ func (s FdsnWs) Locate() *url.URL {
 	}
 
 	q := u.Query()
-	q.Set("starttime", time.Now().Add(-36*time.Hour).Format("2006-01-02"))
+	q.Set("starttime", time.Now().Add(-48*time.Hour).Format("2006-01-02"))
 	q.Set("limit", fmt.Sprintf("%d", 10))
 	u.RawQuery = q.Encode()
 
