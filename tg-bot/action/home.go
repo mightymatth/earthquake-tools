@@ -32,11 +32,13 @@ Source code: <a href="https://github.com/mightymatth/earthquake-tools">GitHub</a
 }
 
 func (a HomeAction) inlineButtons() *tgbotapi.InlineKeyboardMarkup {
-	subs := tgbotapi.NewInlineKeyboardButtonData("Subscriptions",
+	subs := tgbotapi.NewInlineKeyboardButtonData("📝 Subscriptions",
 		NewSubscriptionsAction("").Encode())
+	settings := tgbotapi.NewInlineKeyboardButtonData("🛠 Settings",
+		NewSettingsAction("").Encode())
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(subs),
+		tgbotapi.NewInlineKeyboardRow(subs, settings),
 	)
 	return &kb
 }

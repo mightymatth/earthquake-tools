@@ -38,6 +38,8 @@ func (a SetMagnitudeAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message,
 
 func (a SetMagnitudeAction) text() string {
 	return `
+<b>Subscription ᐅ Magnitude</b>
+
 Enter minimum magnitude to receive an alert.
 e.g.: <code>4.3</code>, <code>5</code>
 `

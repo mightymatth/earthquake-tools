@@ -29,6 +29,8 @@ func (a SubscriptionsAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message
 
 func (a SubscriptionsAction) text() string {
 	return `
+<b>Subscriptions</b>
+
 Here is the list of your active subscriptions.
 Click on any subscription to edit it or create a new one.
 `

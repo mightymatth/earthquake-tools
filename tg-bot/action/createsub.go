@@ -30,6 +30,7 @@ func (a CreateSubscriptionAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Me
 
 func (a CreateSubscriptionAction) text() string {
 	return `
+<b>Subscriptions ᐅ New</b>
 Enter short subscription name (e.g. city, region or state you want to observe).
 `
 }

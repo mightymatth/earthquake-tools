@@ -37,6 +37,8 @@ func (a SetNameAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s st
 
 func (a SetNameAction) text() string {
 	return `
+<b>Subscription ᐅ Name</b>
+
 Enter short subscription name (e.g. city, region or state you want to observe).
 `
 }
