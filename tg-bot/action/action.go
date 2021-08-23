@@ -80,6 +80,10 @@ func Decode(data string) (Actionable, error) {
 		return NewSetLocationAction(p1), nil
 	case SetRadius:
 		return NewSetRadiusAction(p1), nil
+	case Settings:
+		return NewSettingsAction(ResetInputType(p1)), nil
+	case DisableInput:
+		return NewDisableInputAction(p1), nil
 	default:
 		return nil, errors.Errorf("action with command '%s' doesn't exist", cmd)
 	}

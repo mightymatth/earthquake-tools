@@ -38,7 +38,11 @@ func botHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI, s storage.Service)
 		return
 	}
 
-	chatState := storage.Service.GetChatState(s, update.Message.Chat.ID)
+	chatState := s.GetChatState(update.Message.Chat.ID)
+
+	if !update.Message.Chat.IsPrivate() && chatState.DisableInput {
+		return
+	}
 
 	if chatState.AwaitInput == "" {
 		action.ShowUnknownCommand(bot, update.Message.Chat.ID)

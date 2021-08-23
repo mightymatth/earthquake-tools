@@ -36,6 +36,8 @@ func (a SetLocationAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, 
 
 func (a SetLocationAction) text() string {
 	return `
+<b>Subscription ᐅ Location</b>
+
 Send the location that will mark the center of your wanted observation area.
 To send the location, click <b>Send attachment</b> icon and click on <b>Send location</b>.
 `

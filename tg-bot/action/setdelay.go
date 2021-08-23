@@ -38,6 +38,8 @@ func (a SetDelayAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s s
 
 func (a SetDelayAction) text() string {
 	return `
+<b>Subscription ᐅ Delay</b>
+
 <b>Delay</b> is a time period between the earthquake occasion and the moment when the report is received. 
 It is expected behavior as data may arrive from various sources.
 

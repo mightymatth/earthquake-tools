@@ -86,8 +86,9 @@ func (s *Storage) GetChatState(chatID int64) *entity.ChatState {
 	}
 
 	chatState := entity.ChatState{
-		ChatID:     chatStateDB.ChatID,
-		AwaitInput: chatStateDB.AwaitInput,
+		ChatID:       chatStateDB.ChatID,
+		AwaitInput:   chatStateDB.AwaitInput,
+		DisableInput: chatStateDB.DisableInput,
 	}
 
 	return &chatState
@@ -99,7 +100,8 @@ func (s *Storage) SetChatState(
 	var newChatStateDB ChatState
 
 	updateDB := ChatStateUpdate{
-		AwaitInput: update.AwaitInput,
+		AwaitInput:   update.AwaitInput,
+		DisableInput: update.DisableInput,
 	}
 
 	filter := bson.M{"chat_id": chatID}
@@ -120,8 +122,9 @@ func (s *Storage) SetChatState(
 	}
 
 	newChatState := entity.ChatState{
-		ChatID:     newChatStateDB.ChatID,
-		AwaitInput: newChatStateDB.AwaitInput,
+		ChatID:       newChatStateDB.ChatID,
+		AwaitInput:   newChatStateDB.AwaitInput,
+		DisableInput: newChatStateDB.DisableInput,
 	}
 
 	return &newChatState, nil

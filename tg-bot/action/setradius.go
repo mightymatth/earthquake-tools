@@ -38,6 +38,8 @@ func (a SetRadiusAction) Perform(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, s 
 
 func (a SetRadiusAction) text() string {
 	return `
+<b>Subscription ᐅ Radius</b>
+
 Enter maximum earthquake location radius to receive an alert.
 The unit is kilometer (km).
 If <code>0</code> (zero) value is provided, it will subscribe to the entire world.
