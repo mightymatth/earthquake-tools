@@ -17,6 +17,8 @@ This command will:
 
 ## Deployment
 
+### Manual
+
 ```shell
 # build docker image
 docker build -t eq-tg-bot .
@@ -25,7 +27,27 @@ docker build -t eq-tg-bot .
 docker run -d --network host --log-opt max-size=10m --log-opt max-file=5 -e MONGO_URI="mongodb+srv://.../?retryWrites=true&w=majority" -e TELEGRAM_BOT_TOKEN="14...w" -e BOT_ENV=prod --restart=always eq-tg-bot:latest
 ```
 
-### Bot Father configuration
+### Fly.io
+
+Install [flyctl](https://fly.io/docs/flyctl/installing/).
+
+```shell
+# log in with your account
+flyctl auth login
+
+# launch the app
+flyctl launch
+
+# set app secrets 
+flyctl secrets set TELEGRAM_BOT_TOKEN=<tg-bot-token> \
+                   DB_NAMESPACE=prod \
+                   MONGO_URI="<mongo-db-uri>"
+```
+
+Check [the official documentation](https://fly.io/docs/flyctl/).
+
+
+## Bot Father configuration
 
 #### Name
 

@@ -21,6 +21,8 @@ go run . -webhook "https://custom.webhook.url"
 
 ## Deployment
 
+### Manual
+
 ```shell
 # build docker image
 docker build -t eq-aggregator .
@@ -39,3 +41,21 @@ If webhook is set on host machine, the container needs to be bind to host networ
 ````shell
 docker run -d --restart=always --network host -e WEBHOOK=http://host.docker.internal:3300 eq-aggregator:latest
 ````
+
+### Fly.io
+
+Install [flyctl](https://fly.io/docs/flyctl/installing/).
+
+```shell
+# log in with your account
+flyctl auth login
+
+# launch the app
+flyctl launch
+
+# set webhook where to send events 
+flyctl secrets set WEBHOOK=<your-webhook-url>
+# e.g. WEBHOOK=http://eq-tg-bot.internal
+```
+
+Check [the official documentation](https://fly.io/docs/flyctl/).
