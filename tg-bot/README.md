@@ -40,7 +40,7 @@ flyctl launch
 
 # set app secrets 
 flyctl secrets set TELEGRAM_BOT_TOKEN=<tg-bot-token> \
-                   DB_NAMESPACE=prod \
+                   BOT_ENV=prod \
                    MONGO_URI="<mongo-db-uri>"
 ```
 
