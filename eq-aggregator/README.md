@@ -55,7 +55,7 @@ flyctl launch
 
 # set webhook where to send events 
 flyctl secrets set WEBHOOK=<your-webhook-url>
-# e.g. WEBHOOK=http://eq-tg-bot.internal
+# e.g. WEBHOOK=http://eq-tg-bot.internal:3300
 ```
 
 Check [the official documentation](https://fly.io/docs/flyctl/).
