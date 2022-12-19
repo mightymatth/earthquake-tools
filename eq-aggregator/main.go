@@ -3,11 +3,14 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/mightymatth/earthquake-tools/eq-aggregator/source"
+	"log"
 	"os"
 	"os/signal"
-	"sync"
 )
+
+var webhook = flag.String("webhook",
+	"http://localhost:3300",
+	"webhook address for events")
 
 func main() {
 	flag.Parse()
@@ -17,41 +20,31 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sources := []ListenTransformer{
-		source.NewEmscWs(),
-		source.NewUsgs(),
-		source.NewEmscRest(),
-		source.NewIris(),
-		source.NewUspBr(),
-		source.NewGeofon(),
-	}
+	output := start(ctx)
 
-	var wg sync.WaitGroup
-	for _, src := range sources {
-		wg.Add(1)
-		go func(src ListenTransformer) {
-			defer wg.Done()
-			src.Listen(ctx, src)
-		}(src)
-	}
-
-	c := make(chan struct{})
+	done := make(chan struct{})
 	go func() {
-		wg.Wait()
-		c <- struct{}{}
+		for {
+			select {
+			case event, ok := <-output:
+				if !ok {
+					output = nil
+					done <- struct{}{}
+					return
+				}
+
+				err := sendToWebhook(event, *webhook)
+				if err != nil {
+					log.Println(err)
+				}
+				log.Println(event)
+			}
+		}
 	}()
 
 	select {
-	case <-c:
+	case <-done:
 	case <-interrupt:
+	case <-ctx.Done():
 	}
-}
-
-type Listener interface {
-	Listen(ctx context.Context, lt source.LocateTransformer)
-}
-
-type ListenTransformer interface {
-	source.LocateTransformer
-	Listener
 }

@@ -14,7 +14,7 @@ import (
 func main() {
 	_ = loadDotEnv()
 
-	bot, err := tgbotapi.NewBotAPI(getEnv("TELEGRAM_BOT_TOKEN", ""))
+	botAPI, err := tgbotapi.NewBotAPI(getEnv("TELEGRAM_BOT_TOKEN", ""))
 	if err != nil {
 		log.Panic("cannot initialize bot api:", err)
 	}
@@ -27,12 +27,12 @@ func main() {
 
 	service := storage.NewService(storageImpl)
 
-	http.HandleFunc("/", EqEventHandler(bot, service))
+	http.HandleFunc("/", EqEventHandler(botAPI, service))
 	go func() {
 		log.Panic(http.ListenAndServe(":3300", nil))
 	}()
 
-	log.Panic(TgBotServer(bot, service))
+	log.Panic(TgBotServer(botAPI, service))
 }
 
 func TgBotServer(bot *tgbotapi.BotAPI, s storage.Service) error {

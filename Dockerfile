@@ -4,8 +4,8 @@ LABEL maintainer="Matija Pevec <pevec@live.com>"
 
 WORKDIR /app
 
-COPY ../go.mod .
-COPY ../go.sum .
+COPY go.mod .
+COPY go.sum .
 RUN go mod download
 COPY . .
 
@@ -16,4 +16,6 @@ FROM alpine:latest
 WORKDIR /root
 COPY --from=builder /out/main .
 
-CMD ./main
+ENV WEBHOOK "http://localhost:3300"
+
+CMD ./main -webhook $WEBHOOK

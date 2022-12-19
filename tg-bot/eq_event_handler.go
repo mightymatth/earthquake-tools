@@ -22,31 +22,33 @@ func EqEventHandler(bot *tgbotapi.BotAPI, s storage.Service) func(http.ResponseW
 
 		w.WriteHeader(http.StatusAccepted)
 
-		go func(event EarthquakeEvent, bot *tgbotapi.BotAPI, s storage.Service) {
-			eventData := entity.EventData{
-				Magnitude: event.Mag,
-				Delay:     time.Now().Sub(event.Time).Minutes(),
-				Location: entity.Location{
-					Lat: event.Lat,
-					Lng: event.Lon,
-				},
-				Source: event.SourceID,
-			}
-
-			chatIDs, err := s.GetEventSubscribers(eventData)
-			if err != nil {
-				log.Printf("cannot get event subscribers: %v\n", err)
-			}
-
-			if len(chatIDs) == 0 {
-				return
-			}
-
-			eventReport := eventReport{event, time.Now()}
-
-			broadcast(eventReport, chatIDs, bot)
-		}(event, bot, s)
+		go sendEventReport(event, bot, s)
 	}
+}
+
+func sendEventReport(event EarthquakeEvent, bot *tgbotapi.BotAPI, s storage.Service) {
+	eventData := entity.EventData{
+		Magnitude: event.Mag,
+		Delay:     time.Now().Sub(event.Time).Minutes(),
+		Location: entity.Location{
+			Lat: event.Lat,
+			Lng: event.Lon,
+		},
+		Source: event.SourceID,
+	}
+
+	chatIDs, err := s.GetEventSubscribers(eventData)
+	if err != nil {
+		log.Printf("cannot get event subscribers: %v\n", err)
+	}
+
+	if len(chatIDs) == 0 {
+		return
+	}
+
+	eventReport := eventReport{event, time.Now()}
+
+	broadcast(eventReport, chatIDs, bot)
 }
 
 func broadcast(eventReport eventReport, chatIDs []int64, bot *tgbotapi.BotAPI) {

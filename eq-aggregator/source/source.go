@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/json"
-	"flag"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/mightymatth/earthquake-tools/eq-aggregator/cache"
@@ -15,10 +13,6 @@ import (
 	"net/url"
 	"time"
 )
-
-var webhook = flag.String("webhook",
-	"http://localhost:3300",
-	"webhook address for events")
 
 var sourceCache cache.Cacher
 
@@ -41,12 +35,14 @@ type source struct {
 	SourceID ID
 }
 
-func (s source) Listen(ctx context.Context, lt LocateTransformer) {
+func (s source) Listen(
+	ctx context.Context, lt LocateTransformer, output chan<- EarthquakeData,
+) {
 	switch s.Method {
 	case WEBSOCKET:
-		s.listenWS(ctx, lt)
+		s.listenWS(ctx, lt, output)
 	case REST:
-		s.listenREST(ctx, lt)
+		s.listenREST(ctx, lt, output)
 	}
 }
 
@@ -73,7 +69,9 @@ type LocateTransformer interface {
 	Locator
 }
 
-func (s source) listenWS(ctx context.Context, lt LocateTransformer) {
+func (s source) listenWS(
+	ctx context.Context, lt LocateTransformer, output chan<- EarthquakeData,
+) {
 	restart := make(chan struct{})
 
 start:
@@ -107,12 +105,8 @@ start:
 				continue
 			}
 
-			for _, data := range events {
-				err = s.sendToWebhook(data)
-				if err != nil {
-					log.Printf("[WS][%s] sending to webhook failed: %s", s.Name, err)
-					continue
-				}
+			for _, event := range events {
+				output <- event
 			}
 		}
 	}()
@@ -141,23 +135,9 @@ start:
 	}
 }
 
-func (s source) sendToWebhook(data EarthquakeData) error {
-	b, err := json.Marshal(&data)
-	if err != nil {
-		return fmt.Errorf("cannot marshal earthquake data to JSON: %s", err)
-	}
-
-	_, err = http.Post(*webhook, "application/json", bytes.NewBuffer(b))
-	if err != nil {
-		return fmt.Errorf("request failed: %s", err)
-	}
-
-	log.Printf("[%s][%s] sent to webhook: %+v", s.Method, s.Name, data)
-
-	return nil
-}
-
-func (s source) listenREST(ctx context.Context, lt LocateTransformer) {
+func (s source) listenREST(
+	ctx context.Context, lt LocateTransformer, output chan<- EarthquakeData,
+) {
 start:
 	log.Printf("[REST][%s] connecting...", s.Name)
 
@@ -202,11 +182,12 @@ start:
 		}
 
 		for _, event := range diffEvents {
-			err = s.sendToWebhook(event)
-			if err != nil {
-				log.Printf("[REST][%s] sending to webhook failed: %s", s.Name, err)
-				continue
-			}
+			output <- event
+			//err = s.sendToWebhook(event)
+			//if err != nil {
+			//	log.Printf("[REST][%s] sending to webhook failed: %s", s.Name, err)
+			//	continue
+			//}
 		}
 	}
 }
@@ -277,7 +258,7 @@ func (s source) getHashKey() string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(key)))
 }
 
-//EarthquakeData represents a narrow set of attributes that expresses a single
+// EarthquakeData represents a narrow set of attributes that expresses a single
 // earthquake.
 type EarthquakeData struct {
 	Mag        float64   `json:"mag"`
