@@ -6,14 +6,11 @@ Set of utilities that help to track and notify users about recent earthquakes.
 
 The current utilities are:
 
-* [Telegram Bot](/tg-bot)
+* [Telegram Bot](/tgbot)
     * the bot is available [here](https://t.me/EarthquakeEventsBot).
-* [Earthquake aggregator](/eq-aggregator)
+* [Earthquake aggregator](/cmd/aggregator)
     * used to subscribe to multiple earthquake sources and notify Telegram Bot (or anyone else) about the events.
 
-# Deployment
+# License
 
-To start bot and aggregator together, setup `.env` file with valid secrets and use Docker Compose:
-```shell
-docker-compose up --build -d
-```
+[MIT](/LICENSE)
