@@ -1,6 +1,6 @@
 module github.com/mightymatth/earthquake-tools
 
-go 1.18
+go 1.20
 
 require (
 	github.com/dgraph-io/ristretto v0.1.0
