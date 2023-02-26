@@ -95,7 +95,8 @@ func broadcast(eventReport eventReport, chatIDs []int64, bot *tgbotapi.BotAPI) {
 
 			if err != nil {
 				if i == retryAttempts {
-					log.Printf("error sending event after %d retr{y,ies}: %v", retryAttempts, err)
+					log.Printf("error sending event after %d retr{y,ies}: %v\n", retryAttempts, err)
+					log.Printf("chatID: %d\n", chatID)
 					break
 				}
 				time.Sleep(sleepPeriod)
