@@ -4,13 +4,10 @@ LABEL maintainer="Matija Pevec <pevec@live.com>"
 
 WORKDIR /app
 
-COPY ../go.mod .
-COPY ../go.sum .
+COPY .. .
 RUN go mod download
-COPY . .
 
-RUN go build -ldflags '-w -s' -o /out/main .
-
+RUN CGO_ENABLED=0 go build -ldflags '-w -s' -o /out/main ./tgbot
 
 FROM alpine:latest
 WORKDIR /root

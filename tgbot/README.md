@@ -24,11 +24,13 @@ go run *.go
 ### Manual
 
 ```shell
+# run the following commands from the current directory (tgbot)
+
 # build docker image
 docker build -t eq-tg-bot .
 
 # run docker container
-docker run -d --log-opt max-size=10m --log-opt max-file=5 \
+docker run \
             -e TELEGRAM_BOT_TOKEN="14...w" \
             -e MONGO_URI="mongodb+srv://.../?retryWrites=true&w=majority" \
             -e DB_NAMESPACE="dev" \
@@ -41,16 +43,30 @@ docker run -d --log-opt max-size=10m --log-opt max-file=5 \
 Install [flyctl](https://fly.io/docs/flyctl/installing/).
 
 ```shell
+# run the following commands from the root directory
+
 # log in with your account
 flyctl auth login
 
+# set app name
+export APP_NAME=eq-tg-bot
+
 # launch the app
-flyctl launch
+fly launch --path tgbot --region ams --copy-config --remote-only --no-deploy --name $APP_NAME  
 
 # set app secrets 
-flyctl secrets set TELEGRAM_BOT_TOKEN=<tg-bot-token> \
-                   BOT_ENV=prod \
-                   MONGO_URI="<mongo-db-uri>"
+flyctl secrets set TELEGRAM_BOT_TOKEN="<token>" \
+                   MONGO_URI="<mongo-db-uri>" -a $APP_NAME 
+
+# deploy
+fly deploy --dockerfile tgbot/Dockerfile -a $APP_NAME        
+
+# if deployment fails, try to restart it
+fly scale count 0 -a $APP_NAME
+fly scale count 1 -a $APP_NAME
+
+# test deploy (run from root directory)
+fly deploy --build-only --no-cache --config tgbot/fly.toml
 ```
 
 Check [the official documentation](https://fly.io/docs/flyctl/).

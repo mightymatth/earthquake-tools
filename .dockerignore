@@ -1,0 +1,7 @@
+*
+
+!aggregator/
+!tgbot/
+
+!go.mod
+!go.sum
