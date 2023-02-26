@@ -1,0 +1,28 @@
+name: build
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: 'go.mod'
+
+      - name: fmt, vet, test
+        run: |
+          go fmt ./...
+          go vet ./...
+          go test ./...
+
+      - name: build
+        run: |
+          go build -o out/aggregator cmd/aggregator/*.go 
+          go build -o out/tgbot tgbot/*.go
