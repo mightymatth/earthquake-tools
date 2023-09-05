@@ -11,7 +11,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.12.1
-	gopkg.in/ugjka/go-tz.v2 v2.0.13
+	gopkg.in/ugjka/go-tz.v2 v2.0.15
 )
 
 require (
